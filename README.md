@@ -26,12 +26,14 @@ aco config --help
 
 ## Development
 
+Tool versions (Node, pnpm) are pinned in `mise.toml` — install [mise](https://mise.jdx.dev) and run `mise install` to match.
+
 ```sh
-npm install
-npm run dev -- --help      # run the CLI via tsx watch
-npm run typecheck          # tsc --noEmit
-npm run test               # vitest run
-npm run build              # produce dist/cli.js via tsup
+pnpm install
+pnpm dev -- --help         # run the CLI via tsx watch
+pnpm typecheck             # tsc --noEmit
+pnpm test                  # vitest run
+pnpm build                 # produce dist/cli.js via tsup
 ```
 
 ## License
