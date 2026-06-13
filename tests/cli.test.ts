@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import { parseConnection, resolveConnection } from '../src/lib/connection.js';
 import type { SessionRecord } from '../src/lib/session-store.js';
+import { listAndroidAvds } from '../src/lib/devices/android.js';
+import { renderTable, sortDevices } from '../src/lib/devices/format.js';
+import type { Device } from '../src/lib/devices/types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cliEntry = resolve(here, '..', 'src', 'cli.ts');
@@ -273,4 +276,242 @@ describe('aco CLI', () => {
   // this iteration. It would require a real `appium` binary on PATH (and an
   // AUT to connect to), which the rest of the suite also avoids. Manual smoke
   // tests live in the plan's Phase 10 checklist.
+
+  it('sortDevices orders booted < available < unknown < unavailable, ties by name', () => {
+    const devices: Device[] = [
+      { id: '1', name: 'Beta', platform: 'ios', kind: 'simulator', state: 'available' },
+      { id: '2', name: 'Alpha', platform: 'ios', kind: 'simulator', state: 'unavailable' },
+      { id: '3', name: 'Gamma', platform: 'ios', kind: 'simulator', state: 'booted' },
+      { id: '4', name: 'Delta', platform: 'ios', kind: 'simulator', state: 'unknown' },
+      { id: '5', name: 'Alpha', platform: 'ios', kind: 'simulator', state: 'available' },
+    ];
+    const sorted = sortDevices(devices).map((d) => `${d.state}:${d.name}`);
+    expect(sorted).toEqual([
+      'booted:Gamma',
+      'available:Alpha',
+      'available:Beta',
+      'unknown:Delta',
+      'unavailable:Alpha',
+    ]);
+  });
+
+  it('renderTable returns the empty string for an empty list', () => {
+    expect(renderTable([])).toBe('');
+  });
+
+  it('renderTable aligns columns when one row has a long device name', () => {
+    const devices: Device[] = [
+      {
+        id: 'short-id',
+        name: 'A',
+        platform: 'ios',
+        kind: 'simulator',
+        state: 'available',
+        platformVersion: '17.0',
+        runtime: 'iOS 17.0',
+      },
+      {
+        id: 'very-long-id-value',
+        name: 'A-very-long-device-name-row',
+        platform: 'ios',
+        kind: 'simulator',
+        state: 'available',
+        platformVersion: '17.0',
+        runtime: 'iOS 17.0',
+      },
+    ];
+    const out = renderTable(devices);
+    const lines = out.split('\n').filter((l) => l.length > 0);
+    expect(lines.length).toBe(3); // header + 2 rows
+    const prefixLen = (line: string) => line.lastIndexOf('  ') + 2;
+    const headerPrefix = prefixLen(lines[0] ?? '');
+    expect(prefixLen(lines[1] ?? '')).toBe(headerPrefix);
+    expect(prefixLen(lines[2] ?? '')).toBe(headerPrefix);
+  });
+
+  it('listAndroidAvds reads a synthesized AVD directory via ANDROID_AVD_HOME', async () => {
+    const home = makeTmpHome();
+    const avdDir = join(home, 'avds');
+    mkdirSync(avdDir, { recursive: true });
+    writeFileSync(
+      join(avdDir, 'Foo.ini'),
+      'target=android-33\npath=/some/where/Foo.avd\n',
+    );
+    const prev = {
+      avd: process.env.ANDROID_AVD_HOME,
+      emu: process.env.ANDROID_EMULATOR_HOME,
+    };
+    process.env.ANDROID_AVD_HOME = avdDir;
+    delete process.env.ANDROID_EMULATOR_HOME;
+    try {
+      const result = await listAndroidAvds();
+      expect(result.notes).toEqual([]);
+      expect(result.devices.length).toBe(1);
+      const d = result.devices[0];
+      expect(d?.name).toBe('Foo');
+      expect(d?.id).toBe('Foo');
+      expect(d?.platform).toBe('android');
+      expect(d?.kind).toBe('emulator');
+      expect(d?.state).toBe('unknown');
+      expect(d?.platformVersion).toBe('33');
+      expect(d?.runtime).toBe('android-33');
+    } finally {
+      if (prev.avd === undefined) delete process.env.ANDROID_AVD_HOME;
+      else process.env.ANDROID_AVD_HOME = prev.avd;
+      if (prev.emu === undefined) delete process.env.ANDROID_EMULATOR_HOME;
+      else process.env.ANDROID_EMULATOR_HOME = prev.emu;
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('listAndroidAvds emits a "skipped" note when no env vars and no ~/.android/avd', async () => {
+    const home = makeTmpHome();
+    const prev = {
+      avd: process.env.ANDROID_AVD_HOME,
+      emu: process.env.ANDROID_EMULATOR_HOME,
+      home: process.env.HOME,
+    };
+    delete process.env.ANDROID_AVD_HOME;
+    delete process.env.ANDROID_EMULATOR_HOME;
+    process.env.HOME = home;
+    try {
+      const result = await listAndroidAvds();
+      expect(result.devices).toEqual([]);
+      expect(result.notes.some((n) => /Android skipped/.test(n))).toBe(true);
+    } finally {
+      if (prev.avd === undefined) delete process.env.ANDROID_AVD_HOME;
+      else process.env.ANDROID_AVD_HOME = prev.avd;
+      if (prev.emu === undefined) delete process.env.ANDROID_EMULATOR_HOME;
+      else process.env.ANDROID_EMULATOR_HOME = prev.emu;
+      if (prev.home === undefined) delete process.env.HOME;
+      else process.env.HOME = prev.home;
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('listAndroidAvds falls back from ANDROID_AVD_HOME to ANDROID_EMULATOR_HOME/avd', async () => {
+    const home = makeTmpHome();
+    const emuHome = join(home, 'emu');
+    const avdDir = join(emuHome, 'avd');
+    mkdirSync(avdDir, { recursive: true });
+    writeFileSync(join(avdDir, 'Fallback.ini'), 'target=android-30\n');
+    const prev = {
+      avd: process.env.ANDROID_AVD_HOME,
+      emu: process.env.ANDROID_EMULATOR_HOME,
+    };
+    delete process.env.ANDROID_AVD_HOME;
+    process.env.ANDROID_EMULATOR_HOME = emuHome;
+    try {
+      const result = await listAndroidAvds();
+      expect(result.devices.length).toBe(1);
+      expect(result.devices[0]?.name).toBe('Fallback');
+      expect(result.devices[0]?.platformVersion).toBe('30');
+    } finally {
+      if (prev.avd === undefined) delete process.env.ANDROID_AVD_HOME;
+      else process.env.ANDROID_AVD_HOME = prev.avd;
+      if (prev.emu === undefined) delete process.env.ANDROID_EMULATOR_HOME;
+      else process.env.ANDROID_EMULATOR_HOME = prev.emu;
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('aco device list --help exits 0 and mentions discover and --platform', () => {
+    const result = runCli(['device', 'list', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--platform');
+    expect(result.stdout.toLowerCase()).toMatch(/simulators|avds/);
+  });
+
+  it('aco device list --json --platform android with synthetic ANDROID_AVD_HOME returns JSON', () => {
+    const home = makeTmpHome();
+    const avdDir = join(home, 'avds');
+    mkdirSync(avdDir, { recursive: true });
+    writeFileSync(
+      join(avdDir, 'TestAvd.ini'),
+      'target=android-34\npath=/tmp/whatever\n',
+    );
+    try {
+      const result = runCli(
+        ['device', 'list', '--json', '--platform', 'android'],
+        {
+          HOME: home,
+          ANDROID_AVD_HOME: avdDir,
+          ANDROID_EMULATOR_HOME: '',
+        },
+      );
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout) as {
+        devices: Device[];
+        notes: string[];
+      };
+      expect(parsed.devices.length).toBe(1);
+      expect(parsed.devices[0]?.platform).toBe('android');
+      expect(parsed.devices[0]?.name).toBe('TestAvd');
+      expect(parsed.devices[0]?.platformVersion).toBe('34');
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('aco device list --platform pizza exits non-zero with a clear error', () => {
+    const result = runCli(['device', 'list', '--platform', 'pizza']);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toMatch(/--platform must be "ios" or "android"/);
+  });
+
+  it('aco device list --state booted --json with no booted devices returns devices: []', () => {
+    const home = makeTmpHome();
+    const avdDir = join(home, 'avds');
+    mkdirSync(avdDir, { recursive: true });
+    writeFileSync(join(avdDir, 'Quiet.ini'), 'target=android-33\n');
+    try {
+      const result = runCli(
+        [
+          'device',
+          'list',
+          '--platform',
+          'android',
+          '--state',
+          'booted',
+          '--json',
+        ],
+        {
+          HOME: home,
+          ANDROID_AVD_HOME: avdDir,
+          ANDROID_EMULATOR_HOME: '',
+        },
+      );
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout) as {
+        devices: Device[];
+        notes: string[];
+      };
+      expect(parsed.devices).toEqual([]);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('aco device list --platform android --json with no AVDs returns empty + skipped note', () => {
+    const home = makeTmpHome();
+    try {
+      const result = runCli(
+        ['device', 'list', '--platform', 'android', '--json'],
+        {
+          HOME: home,
+          ANDROID_AVD_HOME: '',
+          ANDROID_EMULATOR_HOME: '',
+        },
+      );
+      expect(result.status).toBe(0);
+      const parsed = JSON.parse(result.stdout) as {
+        devices: Device[];
+        notes: string[];
+      };
+      expect(parsed.devices).toEqual([]);
+      expect(parsed.notes.some((n) => /Android skipped/.test(n))).toBe(true);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
 });
