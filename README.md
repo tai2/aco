@@ -1,5 +1,7 @@
 # aco -- Appium Command-line Operator
 
+[![ci](https://github.com/tai2/aco/actions/workflows/ci.yml/badge.svg)](https://github.com/tai2/aco/actions/workflows/ci.yml)
+
 Drive an Appium session from the shell. Boot a sidecar Appium server, create a
 session against an AUT, then send single Appium commands as individual shell
 invocations -- no client-script scaffolding required.
