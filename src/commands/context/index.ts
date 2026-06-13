@@ -1,6 +1,6 @@
 import type { Command } from '@commander-js/extra-typings';
-import { registerContextList } from './list.js';
 import { registerContextCurrent } from './current.js';
+import { registerContextList } from './list.js';
 import { registerContextSwitch } from './switch.js';
 
 export function registerContext(program: Command): void {

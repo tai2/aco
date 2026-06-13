@@ -1,6 +1,6 @@
 import type { Command } from '@commander-js/extra-typings';
-import { runWithSession } from '../../lib/run-with-session.js';
 import { addConnectionFlags } from '../../lib/connection.js';
+import { runWithSession } from '../../lib/run-with-session.js';
 
 const W3C_ELEMENT_ID = 'element-6066-11e4-a52e-4f735466cecf';
 
@@ -17,7 +17,7 @@ const STRATEGIES = [
 ] as const;
 
 function unwrapElementId(ref: Record<string, string>): string {
-  return ref[W3C_ELEMENT_ID] ?? ref['ELEMENT'] ?? JSON.stringify(ref);
+  return ref[W3C_ELEMENT_ID] ?? ref.ELEMENT ?? JSON.stringify(ref);
 }
 
 export function registerElementFind(element: Command): void {
@@ -47,6 +47,6 @@ export function registerElementFind(element: Command): void {
         >;
         return unwrapElementId(el);
       });
-      process.stdout.write(JSON.stringify(result) + '\n');
+      process.stdout.write(`${JSON.stringify(result)}\n`);
     });
 }

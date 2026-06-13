@@ -1,8 +1,8 @@
 import type { Command } from '@commander-js/extra-typings';
-import { runWithSession } from '../../lib/run-with-session.js';
-import { loadMethodMap } from '../../lib/method-map.js';
 import { addConnectionFlags } from '../../lib/connection.js';
 import { AcoUnknownMobileExtensionError } from '../../lib/errors.js';
+import { loadMethodMap } from '../../lib/method-map.js';
+import { runWithSession } from '../../lib/run-with-session.js';
 
 export function registerMobileCall(mobile: Command): void {
   addConnectionFlags(
@@ -46,6 +46,6 @@ export function registerMobileCall(mobile: Command): void {
         }
         return b.execute(opts.name, args);
       });
-      process.stdout.write(JSON.stringify(result ?? null) + '\n');
+      process.stdout.write(`${JSON.stringify(result ?? null)}\n`);
     });
 }

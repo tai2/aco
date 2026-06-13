@@ -1,9 +1,9 @@
 import type { Command } from '@commander-js/extra-typings';
-import { registerElementFind } from './find.js';
-import { registerElementClick } from './click.js';
-import { registerElementText } from './text.js';
-import { registerElementSendKeys } from './send-keys.js';
 import { registerElementAttribute } from './attribute.js';
+import { registerElementClick } from './click.js';
+import { registerElementFind } from './find.js';
+import { registerElementSendKeys } from './send-keys.js';
+import { registerElementText } from './text.js';
 
 export function registerElement(program: Command): void {
   const element = program

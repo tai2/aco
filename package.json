@@ -6,9 +6,7 @@
   "bin": {
     "aco": "./dist/cli.js"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "engines": {
     "node": ">=20"
   },
@@ -20,8 +18,14 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "check": "biome check .",
+    "verify": "pnpm run check && pnpm run typecheck && pnpm run test && pnpm run build",
     "gen:method-map": "node --import tsx/esm scripts/generate-method-map.ts",
-    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+    "prepublishOnly": "pnpm run verify"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^12.0.0",
@@ -29,6 +33,7 @@
     "webdriverio": "^9.27.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
     "@types/node": "^20.0.0",
     "appium-uiautomator2-driver": "^7.5.2",
     "appium-xcuitest-driver": "^11.9.0",
@@ -38,8 +43,6 @@
     "vitest": "^1.0.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }

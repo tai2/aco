@@ -1,14 +1,14 @@
 import type { Command } from '@commander-js/extra-typings';
+import { stopAppiumServer } from '../../lib/appium-server.js';
+import type { Connection } from '../../lib/connection.js';
 import {
+  type SessionRecord,
   latestLiveSession,
   listSessions,
   readSession,
   removeSession,
-  type SessionRecord,
 } from '../../lib/session-store.js';
 import { attachBrowser } from '../../lib/wd-client.js';
-import { stopAppiumServer } from '../../lib/appium-server.js';
-import type { Connection } from '../../lib/connection.js';
 
 function resolveStopTargets(opts: {
   all?: boolean;

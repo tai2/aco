@@ -1,6 +1,6 @@
 import type { Command } from '@commander-js/extra-typings';
-import { registerMobileList } from './list.js';
 import { registerMobileCall } from './call.js';
+import { registerMobileList } from './list.js';
 
 export function registerMobile(program: Command): void {
   const mobile = program

@@ -2,11 +2,7 @@ export type Platform = 'ios' | 'android';
 
 export type DeviceKind = 'simulator' | 'emulator' | 'real';
 
-export type DeviceState =
-  | 'available'
-  | 'booted'
-  | 'unavailable'
-  | 'unknown';
+export type DeviceState = 'available' | 'booted' | 'unavailable' | 'unknown';
 
 export interface Device {
   id: string;

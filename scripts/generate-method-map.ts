@@ -1,6 +1,6 @@
-import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -34,7 +34,8 @@ interface PackageJsonShape {
 }
 
 function readPkgVersion(pkgJsonPath: string): string {
-  return (JSON.parse(readFileSync(pkgJsonPath, 'utf8')) as PackageJsonShape).version;
+  return (JSON.parse(readFileSync(pkgJsonPath, 'utf8')) as PackageJsonShape)
+    .version;
 }
 
 const iosSnapshot = {
@@ -65,11 +66,11 @@ const androidSnapshot = {
 
 writeFileSync(
   join(dataDir, 'method-map-ios.json'),
-  JSON.stringify(iosSnapshot, null, 2) + '\n',
+  `${JSON.stringify(iosSnapshot, null, 2)}\n`,
 );
 writeFileSync(
   join(dataDir, 'method-map-android.json'),
-  JSON.stringify(androidSnapshot, null, 2) + '\n',
+  `${JSON.stringify(androidSnapshot, null, 2)}\n`,
 );
 
 const summary = (

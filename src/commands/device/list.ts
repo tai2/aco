@@ -1,10 +1,10 @@
 import type { Command } from '@commander-js/extra-typings';
+import { renderTable, sortDevices } from '../../lib/devices/format.js';
 import {
-  listAllDevices,
   type Device,
   type Platform,
+  listAllDevices,
 } from '../../lib/devices/index.js';
-import { renderTable, sortDevices } from '../../lib/devices/format.js';
 
 type StateFilter = 'available' | 'booted' | 'all';
 
@@ -60,8 +60,7 @@ export function registerDeviceList(device: Command): void {
 
       if (opts.json) {
         process.stdout.write(
-          JSON.stringify({ devices: sortDevices(filtered), notes }, null, 2) +
-            '\n',
+          `${JSON.stringify({ devices: sortDevices(filtered), notes }, null, 2)}\n`,
         );
         return;
       }

@@ -27,3 +27,6 @@ coverage/
 # planning notes
 plan.md
 research.md
+
+# TypeScript incremental build info
+*.tsbuildinfo

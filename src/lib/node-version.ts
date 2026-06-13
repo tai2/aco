@@ -2,8 +2,7 @@ export function assertSupportedNodeVersion(minimum: string): void {
   const current = process.versions.node;
   if (compareSemver(current, minimum) < 0) {
     console.error(
-      `aco requires Node.js >= ${minimum}, but is running on ${current}.\n` +
-        `Please upgrade Node.js: https://nodejs.org/`,
+      `aco requires Node.js >= ${minimum}, but is running on ${current}.\nPlease upgrade Node.js: https://nodejs.org/`,
     );
     process.exit(1);
   }

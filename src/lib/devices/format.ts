@@ -32,15 +32,14 @@ export function renderTable(devices: Device[]): string {
     version: Math.max(7, ...cols.map((c) => c.version.length)),
     name: Math.max(4, ...cols.map((c) => c.name.length)),
   };
-  const header =
-    [
-      'PLATFORM'.padEnd(widths.platform),
-      'KIND'.padEnd(widths.kind),
-      'STATE'.padEnd(widths.state),
-      'VERSION'.padEnd(widths.version),
-      'NAME'.padEnd(widths.name),
-      'ID',
-    ].join('  ') + '\n';
+  const header = `${[
+    'PLATFORM'.padEnd(widths.platform),
+    'KIND'.padEnd(widths.kind),
+    'STATE'.padEnd(widths.state),
+    'VERSION'.padEnd(widths.version),
+    'NAME'.padEnd(widths.name),
+    'ID',
+  ].join('  ')}\n`;
   const body = cols
     .map((c) =>
       [
@@ -53,5 +52,5 @@ export function renderTable(devices: Device[]): string {
       ].join('  '),
     )
     .join('\n');
-  return header + body + '\n';
+  return `${header + body}\n`;
 }

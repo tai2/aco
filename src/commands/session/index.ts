@@ -1,6 +1,6 @@
 import type { Command } from '@commander-js/extra-typings';
-import { registerSessionStart } from './start.js';
 import { registerSessionList } from './list.js';
+import { registerSessionStart } from './start.js';
 import { registerSessionStop } from './stop.js';
 
 export function registerSession(program: Command): void {

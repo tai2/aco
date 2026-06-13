@@ -37,7 +37,8 @@ export async function createBrowser(
     path: opts.basePath,
     protocol: 'http',
     logLevel: 'silent',
-    connectionRetryTimeout: opts.connectionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS,
+    connectionRetryTimeout:
+      opts.connectionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS,
     connectionRetryCount: 0,
     capabilities: opts.capabilities as WebdriverIO.Capabilities,
   });

@@ -1,9 +1,9 @@
-import { attachBrowser } from './wd-client.js';
 import {
-  resolveConnection,
   type ConnectionFlags,
   type Platform,
+  resolveConnection,
 } from './connection.js';
+import { attachBrowser } from './wd-client.js';
 
 export async function runWithSession<T>(
   flags: ConnectionFlags,
