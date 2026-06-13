@@ -1,3 +1,7 @@
+import { spawn } from 'node:child_process';
+import { createWriteStream, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import type { Command } from '@commander-js/extra-typings';
 import { buildCapabilities } from '../../lib/caps.js';
 import {
@@ -7,6 +11,11 @@ import {
 import { pickFreePort } from '../../lib/port.js';
 import { createBrowser, DEFAULT_SESSION_TIMEOUT_MS } from '../../lib/wd-client.js';
 import type { Platform } from '../../lib/connection.js';
+import {
+  saveSession,
+  removeSession,
+  type SessionRecord,
+} from '../../lib/session-store.js';
 
 function parseExtraCaps(values: string[] | undefined): Record<string, unknown> {
   const out: Record<string, unknown> = {};
@@ -24,12 +33,91 @@ function parseExtraCaps(values: string[] | undefined): Record<string, unknown> {
   return out;
 }
 
+function readFirstLine(
+  stream: NodeJS.ReadableStream,
+  timeoutMs: number,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let buf = '';
+    const cleanup = () => {
+      clearTimeout(timer);
+      stream.off('data', onData);
+      stream.off('error', onErr);
+    };
+    const onData = (chunk: Buffer) => {
+      buf += chunk.toString('utf8');
+      const nl = buf.indexOf('\n');
+      if (nl >= 0) {
+        cleanup();
+        resolve(buf.slice(0, nl));
+      }
+    };
+    const onErr = (err: Error) => {
+      cleanup();
+      reject(err);
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(
+        new Error(
+          `detached child did not emit a session envelope within ${timeoutMs}ms`,
+        ),
+      );
+    }, timeoutMs);
+    stream.on('data', onData);
+    stream.on('error', onErr);
+  });
+}
+
+async function detachAndExit(): Promise<void> {
+  const entry = process.argv[1];
+  if (!entry || !entry.endsWith('.js')) {
+    process.stderr.write(
+      'aco: --detach is not supported in dev mode (tsx). ' +
+        'Run the built `dist/cli.js` to use --detach.\n',
+    );
+    process.exit(2);
+  }
+
+  const filteredArgs = process.argv.slice(2).filter((a) => a !== '--detach');
+
+  mkdirSync(join(homedir(), '.aco', 'logs'), { recursive: true });
+  const bootstrapLog = createWriteStream(
+    join(homedir(), '.aco', 'logs', `aco-detach-${process.pid}.log`),
+    { flags: 'a' },
+  );
+
+  const child = spawn(process.execPath, [entry, ...filteredArgs], {
+    detached: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: process.env,
+    windowsHide: true,
+  });
+
+  if (!child.stdout || !child.stderr) {
+    throw new Error('aco: failed to capture detached child stdio');
+  }
+
+  const envelope = await readFirstLine(child.stdout, 60_000);
+
+  child.stdout.pipe(bootstrapLog);
+  child.stderr.pipe(bootstrapLog);
+
+  process.stdout.write(envelope + '\n');
+  process.stderr.write(
+    `session detached -- pid ${child.pid}, stop with \`aco session stop\`\n`,
+  );
+
+  child.unref();
+  process.exit(0);
+}
+
 export function registerSessionStart(session: Command): void {
   session
     .command('start')
     .description(
       'spin up an Appium server (sidecar) and create a session against an AUT. ' +
-        'Runs in the foreground bound to the TTY; press Ctrl-C to tear down.',
+        'Runs in the foreground bound to the TTY by default; use --detach for background.',
     )
     .requiredOption('-p, --platform <ios|android>', 'target platform')
     .option(
@@ -67,7 +155,16 @@ export function registerSessionStart(session: Command): void {
       '--log',
       'stream the full Appium server log to stdout (in addition to ~/.aco/logs)',
     )
+    .option(
+      '--detach',
+      'run in the background; print envelope on stdout then exit immediately',
+    )
     .action(async (opts) => {
+      if (opts.detach) {
+        await detachAndExit();
+        return;
+      }
+
       const platform = opts.platform.toLowerCase() as Platform;
       if (platform !== 'ios' && platform !== 'android') {
         throw new Error(
@@ -119,14 +216,23 @@ export function registerSessionStart(session: Command): void {
         throw err;
       }
 
-      const sessionId = browser.sessionId;
+      const record: SessionRecord = {
+        sessionId: browser.sessionId,
+        serverUrl: server.serverUrl,
+        platform,
+        pid: server.pid,
+        startedAt: new Date().toISOString(),
+        deviceName: opts.deviceName,
+        app: opts.app,
+      };
+      saveSession(record);
 
       process.stdout.write(
         JSON.stringify({
-          sessionId,
-          serverUrl: server.serverUrl,
-          platform,
-          pid: server.pid,
+          sessionId: record.sessionId,
+          serverUrl: record.serverUrl,
+          platform: record.platform,
+          pid: record.pid,
         }) + '\n',
       );
       process.stderr.write('session ready -- press Ctrl-C to stop\n');
@@ -152,6 +258,7 @@ export function registerSessionStart(session: Command): void {
         if (reason === 'signal' && server.pid) {
           await stopAppiumServer(server.pid);
         }
+        removeSession(record.sessionId);
         process.exit(exitCode);
       };
 

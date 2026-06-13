@@ -42,17 +42,38 @@ W3C session and stops the Appium child cleanly. Pass `--log` to also stream the
 Appium server log to stdout (it interleaves with the JSON line -- omit `--log`
 in scripts).
 
+On success, `aco` writes a small per-session record to
+`~/.aco/sessions/<sessionId>.json` so subcommands can default to that session.
+The record is removed when the foreground process exits cleanly.
+
+### 1b. Start a session in the background
+
+```sh
+aco session start --detach --platform ios --app /tmp/MyApp.app
+# {"sessionId":"...","serverUrl":"http://127.0.0.1:4723","platform":"ios","pid":54231}
+# session detached -- pid 70011, stop with `aco session stop`
+```
+
+`--detach` re-spawns `aco` in the background, prints the session envelope, and
+exits. Tear it down with `aco session stop` (see below). Detached output is
+captured at `~/.aco/logs/aco-detach-<parent-pid>.log` for postmortem debugging.
+
 ### 2. Drive the session from a second shell
 
 ```sh
-# Subcommands take --session and --platform; --server-url defaults to http://127.0.0.1:4723.
+# With a live local session, all three flags are optional -- they're resolved
+# from the latest record under ~/.aco/sessions/.
+aco source
+aco screenshot --out ./shot.png
+aco tap        --x 100 --y 200
+aco swipe      --direction up
+aco element find  --using "accessibility id" --value "Login"
+aco element click --element <element-id>
+aco context list
+
+# You can still be explicit (required for remote/grid sessions):
 aco source     --session <sid> --platform ios
-aco screenshot --session <sid> --platform ios --out ./shot.png
-aco tap        --session <sid> --platform ios --x 100 --y 200
-aco swipe      --session <sid> --platform ios --direction up
-aco element find  --session <sid> --platform ios --using "accessibility id" --value "Login"
-aco element click --session <sid> --platform ios --element <element-id>
-aco context list  --session <sid> --platform ios
+aco source     --session <sid> --server-url http://10.0.0.5:4799 --platform ios
 ```
 
 ### 3. Inspect / call any `mobile:` extension
@@ -60,14 +81,23 @@ aco context list  --session <sid> --platform ios
 ```sh
 aco mobile list --platform ios
 aco mobile list --platform ios --versions    # show the pinned driver versions
-aco mobile call --session <sid> --platform ios --name "mobile: swipe" --args '{"direction":"up"}'
+aco mobile call --name "mobile: swipe" --args '{"direction":"up"}'
 ```
 
-### Remote / non-default endpoints
+### 4. Inspect / stop stored sessions
 
 ```sh
-aco source --session <sid> --server-url http://10.0.0.5:4799 --platform ios
+aco session list                    # table: startedAt, platform, pid, alive, url, sessionId
+aco session list --json             # machine-readable, with liveness annotations
+aco session list --prune            # delete records for dead servers / crashed children
+
+aco session stop                    # stop the latest live session
+aco session stop --session <sid>    # stop a specific one
+aco session stop --all              # stop every stored session
 ```
+
+`session stop` calls `deleteSession` on the W3C server, SIGTERMs the recorded
+Appium child pid, and unlinks the record.
 
 ## Troubleshooting
 

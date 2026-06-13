@@ -1,11 +1,15 @@
 import { attachBrowser } from './wd-client.js';
-import { parseConnection, type ConnectionFlags, type Platform } from './connection.js';
+import {
+  resolveConnection,
+  type ConnectionFlags,
+  type Platform,
+} from './connection.js';
 
 export async function runWithSession<T>(
   flags: ConnectionFlags,
   fn: (b: WebdriverIO.Browser, platform: Platform) => Promise<T>,
 ): Promise<T> {
-  const conn = parseConnection(flags);
+  const { conn } = resolveConnection(flags);
   const browser = await attachBrowser(conn);
   try {
     return await fn(browser, conn.platform);
