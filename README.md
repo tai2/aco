@@ -25,6 +25,21 @@ npx aco --help
 The CLI has two command classes: a session starter, and a family of single-shot
 client wrappers that attach to an already-running session.
 
+### 0. Discover what you can target
+
+Before starting a session, list every iOS Simulator and Android AVD on your
+machine. `aco` looks at `xcrun simctl list devices -j` for iOS and the AVDs
+under `$ANDROID_AVD_HOME` (falling back to `$ANDROID_EMULATOR_HOME` and
+`~/.android/avd`) for Android. Pipe the row's `NAME` into
+`session start --device-name` (iOS) or `--avd` (Android), or its `ID` into
+`--udid` (iOS).
+
+```sh
+aco device list                          # both platforms, only "available" rows
+aco device list --platform ios           # iOS Simulators only
+aco device list --state all --json       # everything, machine-readable
+```
+
 ### 1. Start a session (foreground)
 
 ```sh

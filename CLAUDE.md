@@ -53,6 +53,16 @@ useful when you add a new one:
    its `build/lib/execute-method-map.js` export. `aco tap`, `aco swipe`, and
    the generic `aco mobile call` escape hatch are wrappers over this layer.
 
+**Device discovery.** `aco device list` enumerates iOS Simulators (via
+`xcrun simctl list -j devices`) and Android AVDs (via the
+`$ANDROID_AVD_HOME`/`$ANDROID_EMULATOR_HOME`/`~/.android/avd` fallback chain
+that `appium-adb`'s `listEmulators()` uses). We do **not** depend on
+`node-simctl` or `appium-adb` at runtime — both are transitive devDeps from
+the driver packages. The same "snapshot at build time, don't share fate with
+driver releases" principle that governs `src/data/method-map-*.json` applies
+here: discovery is a thin in-process wrapper around `xcrun` / the AVD
+directory, not a runtime import of the community packages.
+
 ## How we stay in sync with Appium
 
 Even though we don't ship the drivers at runtime, we still need to know what

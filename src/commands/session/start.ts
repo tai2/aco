@@ -209,7 +209,8 @@ export function registerSessionStart(session: Command): void {
           /Could not find a connected Android device/i.test(msg)
         ) {
           process.stderr.write(
-            'aco: hint -- on Android, pass `--avd <name>` (from `emulator -list-avds`) ' +
+            'aco: hint -- on Android, pass `--avd <name>` ' +
+              '(from `aco device list --platform android`) ' +
               'to auto-boot an emulator, or boot one yourself before running `session start`.\n',
           );
         }

@@ -8,6 +8,7 @@ import { registerTap } from './commands/tap.js';
 import { registerSwipe } from './commands/swipe.js';
 import { registerContext } from './commands/context/index.js';
 import { registerMobile } from './commands/mobile/index.js';
+import { registerDevice } from './commands/device/index.js';
 
 assertSupportedNodeVersion('20.0.0');
 
@@ -28,6 +29,7 @@ registerTap(program);
 registerSwipe(program);
 registerContext(program);
 registerMobile(program);
+registerDevice(program);
 
 try {
   await program.parseAsync(process.argv);
