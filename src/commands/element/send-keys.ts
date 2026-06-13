@@ -1,6 +1,6 @@
 import type { Command } from '@commander-js/extra-typings';
-import { runWithSession } from '../../lib/run-with-session.js';
 import { addConnectionFlags } from '../../lib/connection.js';
+import { runWithSession } from '../../lib/run-with-session.js';
 
 export function registerElementSendKeys(element: Command): void {
   addConnectionFlags(

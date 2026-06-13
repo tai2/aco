@@ -1,11 +1,11 @@
 import type { Command } from '@commander-js/extra-typings';
 import {
+  type SessionRecord,
   isLocalHost,
   isPidAlive,
   listSessions,
   probeServerStatus,
   removeSession,
-  type SessionRecord,
 } from '../../lib/session-store.js';
 
 interface AnnotatedRecord extends SessionRecord {
@@ -54,7 +54,7 @@ export function registerSessionList(session: Command): void {
       }
 
       if (opts.json) {
-        process.stdout.write(JSON.stringify(annotated, null, 2) + '\n');
+        process.stdout.write(`${JSON.stringify(annotated, null, 2)}\n`);
         return;
       }
 
@@ -68,14 +68,14 @@ export function registerSessionList(session: Command): void {
       for (const r of annotated) {
         const alive = r.alive === null ? '?' : r.alive ? 'yes' : 'no';
         process.stdout.write(
-          [
+          `${[
             r.startedAt,
             r.platform.padEnd(7),
             String(r.pid).padEnd(6),
             alive.padEnd(5),
             r.serverUrl.padEnd(34),
             r.sessionId,
-          ].join('  ') + '\n',
+          ].join('  ')}\n`,
         );
       }
     });

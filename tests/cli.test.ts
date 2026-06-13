@@ -1,21 +1,21 @@
-import { describe, it, expect } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   rmSync,
   writeFileSync,
-  existsSync,
-  readdirSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { parseConnection, resolveConnection } from '../src/lib/connection.js';
-import type { SessionRecord } from '../src/lib/session-store.js';
 import { listAndroidAvds } from '../src/lib/devices/android.js';
 import { renderTable, sortDevices } from '../src/lib/devices/format.js';
 import type { Device } from '../src/lib/devices/types.js';
+import type { SessionRecord } from '../src/lib/session-store.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cliEntry = resolve(here, '..', 'src', 'cli.ts');
@@ -36,7 +36,7 @@ function writeRecord(home: string, rec: SessionRecord): void {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   writeFileSync(
     join(dir, `${encodeURIComponent(rec.sessionId)}.json`),
-    JSON.stringify(rec, null, 2) + '\n',
+    `${JSON.stringify(rec, null, 2)}\n`,
     { encoding: 'utf8', mode: 0o600 },
   );
 }
@@ -233,9 +233,9 @@ describe('aco CLI', () => {
       expect(result.status).toBe(0);
       expect(result.stderr).toMatch(/stopping latest-1/);
       expect(result.stderr).toMatch(/stopped latest-1/);
-      expect(
-        existsSync(join(home, '.aco', 'sessions', 'latest-1.json')),
-      ).toBe(false);
+      expect(existsSync(join(home, '.aco', 'sessions', 'latest-1.json'))).toBe(
+        false,
+      );
     } finally {
       try {
         if (child.pid) process.kill(child.pid, 'SIGKILL');
@@ -279,11 +279,41 @@ describe('aco CLI', () => {
 
   it('sortDevices orders booted < available < unknown < unavailable, ties by name', () => {
     const devices: Device[] = [
-      { id: '1', name: 'Beta', platform: 'ios', kind: 'simulator', state: 'available' },
-      { id: '2', name: 'Alpha', platform: 'ios', kind: 'simulator', state: 'unavailable' },
-      { id: '3', name: 'Gamma', platform: 'ios', kind: 'simulator', state: 'booted' },
-      { id: '4', name: 'Delta', platform: 'ios', kind: 'simulator', state: 'unknown' },
-      { id: '5', name: 'Alpha', platform: 'ios', kind: 'simulator', state: 'available' },
+      {
+        id: '1',
+        name: 'Beta',
+        platform: 'ios',
+        kind: 'simulator',
+        state: 'available',
+      },
+      {
+        id: '2',
+        name: 'Alpha',
+        platform: 'ios',
+        kind: 'simulator',
+        state: 'unavailable',
+      },
+      {
+        id: '3',
+        name: 'Gamma',
+        platform: 'ios',
+        kind: 'simulator',
+        state: 'booted',
+      },
+      {
+        id: '4',
+        name: 'Delta',
+        platform: 'ios',
+        kind: 'simulator',
+        state: 'unknown',
+      },
+      {
+        id: '5',
+        name: 'Alpha',
+        platform: 'ios',
+        kind: 'simulator',
+        state: 'available',
+      },
     ];
     const sorted = sortDevices(devices).map((d) => `${d.state}:${d.name}`);
     expect(sorted).toEqual([
@@ -342,7 +372,7 @@ describe('aco CLI', () => {
       emu: process.env.ANDROID_EMULATOR_HOME,
     };
     process.env.ANDROID_AVD_HOME = avdDir;
-    delete process.env.ANDROID_EMULATOR_HOME;
+    process.env.ANDROID_EMULATOR_HOME = undefined;
     try {
       const result = await listAndroidAvds();
       expect(result.notes).toEqual([]);
@@ -356,9 +386,9 @@ describe('aco CLI', () => {
       expect(d?.platformVersion).toBe('33');
       expect(d?.runtime).toBe('android-33');
     } finally {
-      if (prev.avd === undefined) delete process.env.ANDROID_AVD_HOME;
+      if (prev.avd === undefined) process.env.ANDROID_AVD_HOME = undefined;
       else process.env.ANDROID_AVD_HOME = prev.avd;
-      if (prev.emu === undefined) delete process.env.ANDROID_EMULATOR_HOME;
+      if (prev.emu === undefined) process.env.ANDROID_EMULATOR_HOME = undefined;
       else process.env.ANDROID_EMULATOR_HOME = prev.emu;
       rmSync(home, { recursive: true, force: true });
     }
@@ -371,19 +401,19 @@ describe('aco CLI', () => {
       emu: process.env.ANDROID_EMULATOR_HOME,
       home: process.env.HOME,
     };
-    delete process.env.ANDROID_AVD_HOME;
-    delete process.env.ANDROID_EMULATOR_HOME;
+    process.env.ANDROID_AVD_HOME = undefined;
+    process.env.ANDROID_EMULATOR_HOME = undefined;
     process.env.HOME = home;
     try {
       const result = await listAndroidAvds();
       expect(result.devices).toEqual([]);
       expect(result.notes.some((n) => /Android skipped/.test(n))).toBe(true);
     } finally {
-      if (prev.avd === undefined) delete process.env.ANDROID_AVD_HOME;
+      if (prev.avd === undefined) process.env.ANDROID_AVD_HOME = undefined;
       else process.env.ANDROID_AVD_HOME = prev.avd;
-      if (prev.emu === undefined) delete process.env.ANDROID_EMULATOR_HOME;
+      if (prev.emu === undefined) process.env.ANDROID_EMULATOR_HOME = undefined;
       else process.env.ANDROID_EMULATOR_HOME = prev.emu;
-      if (prev.home === undefined) delete process.env.HOME;
+      if (prev.home === undefined) process.env.HOME = undefined;
       else process.env.HOME = prev.home;
       rmSync(home, { recursive: true, force: true });
     }
@@ -399,7 +429,7 @@ describe('aco CLI', () => {
       avd: process.env.ANDROID_AVD_HOME,
       emu: process.env.ANDROID_EMULATOR_HOME,
     };
-    delete process.env.ANDROID_AVD_HOME;
+    process.env.ANDROID_AVD_HOME = undefined;
     process.env.ANDROID_EMULATOR_HOME = emuHome;
     try {
       const result = await listAndroidAvds();
@@ -407,9 +437,9 @@ describe('aco CLI', () => {
       expect(result.devices[0]?.name).toBe('Fallback');
       expect(result.devices[0]?.platformVersion).toBe('30');
     } finally {
-      if (prev.avd === undefined) delete process.env.ANDROID_AVD_HOME;
+      if (prev.avd === undefined) process.env.ANDROID_AVD_HOME = undefined;
       else process.env.ANDROID_AVD_HOME = prev.avd;
-      if (prev.emu === undefined) delete process.env.ANDROID_EMULATOR_HOME;
+      if (prev.emu === undefined) process.env.ANDROID_EMULATOR_HOME = undefined;
       else process.env.ANDROID_EMULATOR_HOME = prev.emu;
       rmSync(home, { recursive: true, force: true });
     }

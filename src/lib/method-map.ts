@@ -1,5 +1,5 @@
-import iosMap from '../data/method-map-ios.json' with { type: 'json' };
 import androidMap from '../data/method-map-android.json' with { type: 'json' };
+import iosMap from '../data/method-map-ios.json' with { type: 'json' };
 
 export interface MethodSpec {
   command: string;

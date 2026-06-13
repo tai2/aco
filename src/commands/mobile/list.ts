@@ -25,7 +25,7 @@ export function registerMobileList(mobile: Command): void {
 
       if (opts.versions) {
         if (opts.json) {
-          process.stdout.write(JSON.stringify(snapshot, null, 2) + '\n');
+          process.stdout.write(`${JSON.stringify(snapshot, null, 2)}\n`);
           return;
         }
         const entryCount = Object.keys(snapshot.methods).length;
@@ -38,7 +38,7 @@ export function registerMobileList(mobile: Command): void {
       }
 
       if (opts.json) {
-        process.stdout.write(JSON.stringify(snapshot.methods, null, 2) + '\n');
+        process.stdout.write(`${JSON.stringify(snapshot.methods, null, 2)}\n`);
         return;
       }
       for (const [name, spec] of Object.entries(snapshot.methods)) {

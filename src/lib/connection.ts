@@ -1,8 +1,8 @@
 import type { Command } from '@commander-js/extra-typings';
 import {
+  type SessionRecord,
   latestLiveSession,
   readSession,
-  type SessionRecord,
 } from './session-store.js';
 
 export type Platform = 'ios' | 'android';

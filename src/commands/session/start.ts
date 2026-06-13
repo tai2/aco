@@ -3,19 +3,22 @@ import { createWriteStream, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Command } from '@commander-js/extra-typings';
-import { buildCapabilities } from '../../lib/caps.js';
 import {
   startAppiumServer,
   stopAppiumServer,
 } from '../../lib/appium-server.js';
-import { pickFreePort } from '../../lib/port.js';
-import { createBrowser, DEFAULT_SESSION_TIMEOUT_MS } from '../../lib/wd-client.js';
+import { buildCapabilities } from '../../lib/caps.js';
 import type { Platform } from '../../lib/connection.js';
+import { pickFreePort } from '../../lib/port.js';
 import {
-  saveSession,
-  removeSession,
   type SessionRecord,
+  removeSession,
+  saveSession,
 } from '../../lib/session-store.js';
+import {
+  DEFAULT_SESSION_TIMEOUT_MS,
+  createBrowser,
+} from '../../lib/wd-client.js';
 
 function parseExtraCaps(values: string[] | undefined): Record<string, unknown> {
   const out: Record<string, unknown> = {};
@@ -103,7 +106,7 @@ async function detachAndExit(): Promise<void> {
   child.stdout.pipe(bootstrapLog);
   child.stderr.pipe(bootstrapLog);
 
-  process.stdout.write(envelope + '\n');
+  process.stdout.write(`${envelope}\n`);
   process.stderr.write(
     `session detached -- pid ${child.pid}, stop with \`aco session stop\`\n`,
   );
@@ -229,12 +232,12 @@ export function registerSessionStart(session: Command): void {
       saveSession(record);
 
       process.stdout.write(
-        JSON.stringify({
+        `${JSON.stringify({
           sessionId: record.sessionId,
           serverUrl: record.serverUrl,
           platform: record.platform,
           pid: record.pid,
-        }) + '\n',
+        })}\n`,
       );
       process.stderr.write('session ready -- press Ctrl-C to stop\n');
 

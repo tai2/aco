@@ -1,6 +1,6 @@
 import type { Command } from '@commander-js/extra-typings';
-import { runWithSession } from '../../lib/run-with-session.js';
 import { addConnectionFlags } from '../../lib/connection.js';
+import { runWithSession } from '../../lib/run-with-session.js';
 
 export function registerElementAttribute(element: Command): void {
   addConnectionFlags(
@@ -16,6 +16,6 @@ export function registerElementAttribute(element: Command): void {
       const value = await runWithSession(opts, (b) =>
         b.getElementAttribute(opts.element, opts.name),
       );
-      process.stdout.write(JSON.stringify(value) + '\n');
+      process.stdout.write(`${JSON.stringify(value)}\n`);
     });
 }

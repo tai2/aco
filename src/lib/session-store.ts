@@ -1,7 +1,7 @@
 import {
   mkdirSync,
-  readdirSync,
   readFileSync,
+  readdirSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -33,7 +33,7 @@ function fileFor(id: string): string {
 
 export function saveSession(rec: SessionRecord): void {
   ensureDir();
-  writeFileSync(fileFor(rec.sessionId), JSON.stringify(rec, null, 2) + '\n', {
+  writeFileSync(fileFor(rec.sessionId), `${JSON.stringify(rec, null, 2)}\n`, {
     encoding: 'utf8',
     mode: 0o600,
   });
@@ -101,7 +101,7 @@ export async function probeServerStatus(
   try {
     statusUrl = new URL(
       'status',
-      serverUrl.endsWith('/') ? serverUrl : serverUrl + '/',
+      serverUrl.endsWith('/') ? serverUrl : `${serverUrl}/`,
     ).toString();
   } catch {
     return null;
