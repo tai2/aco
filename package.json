@@ -18,8 +18,14 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "check": "biome check .",
+    "verify": "pnpm run check && pnpm run typecheck && pnpm run test && pnpm run build",
     "gen:method-map": "node --import tsx/esm scripts/generate-method-map.ts",
-    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+    "prepublishOnly": "pnpm run verify"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^12.0.0",
