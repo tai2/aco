@@ -3,11 +3,16 @@
 `aco` is a CLI on top of Appium. Two command classes:
 
 1. `aco session start` -- spawns the user's `appium` (from `PATH`) and creates a
-   W3C session against an AUT. Runs in the foreground; Ctrl-C tears it down.
+   W3C session against an AUT. Runs in the foreground by default
+   (Ctrl-C tears it down); pass `--detach` to fork it into the background.
+   `aco session list` and `aco session stop` inspect/tear down stored sessions.
 2. Everything else (`aco source`, `aco screenshot`, `aco element ...`,
    `aco tap`, `aco swipe`, `aco context ...`, `aco mobile call`) -- attaches to
-   an existing session via `--session <id>` `--server-url <url>` `--platform
-   <ios|android>`. `--server-url` defaults to `http://127.0.0.1:4723`.
+   an existing session. `--session <id>`, `--server-url <url>`, and
+   `--platform <ios|android>` are all optional: by default they are resolved
+   from the latest live record under `~/.aco/sessions/`. Explicit flags
+   always win. When no session has been started and no flags are passed, the
+   resolver errors out cleanly.
 
 We do **not** redistribute Appium or its drivers inside the `aco` package. We
 assume the user has installed Appium themselves (`npm i -g appium`) and added
@@ -15,11 +20,15 @@ the drivers they need (`appium driver install xcuitest`, etc.). `aco session
 start` spawns `appium` by name from `PATH`; driver discovery is left to the
 user's `APPIUM_HOME`.
 
-Subcommands are stateless: they do **not** read or write any `~/.aco/` registry
-of sessions, and they can attach to any running Appium session (one created by
-`aco session start`, one created by raw `appium`, one on a remote grid, etc.).
-The only on-disk artifact `aco` produces is `~/.aco/logs/appium-<port>.log`
-written by `session start` for postmortem debugging.
+`~/.aco/sessions/<sessionId>.json` is a **convenience layer for default
+resolution**, not a registry the subcommands depend on. With explicit
+`--session`/`--server-url`/`--platform` flags, subcommands remain fully
+stateless and can still attach to any running Appium session (one created by
+raw `appium`, one on a remote grid, etc.). `aco session start` writes the
+record on success and unlinks it on graceful teardown; crash exits intentionally
+leave the file so `session list --prune` can surface it. The other on-disk
+artifact `aco` produces is `~/.aco/logs/appium-<port>.log` written by
+`session start` for postmortem debugging.
 
 ## Background: the three kinds of Appium command
 

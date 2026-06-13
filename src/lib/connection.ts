@@ -1,4 +1,9 @@
 import type { Command } from '@commander-js/extra-typings';
+import {
+  latestLiveSession,
+  readSession,
+  type SessionRecord,
+} from './session-store.js';
 
 export type Platform = 'ios' | 'android';
 
@@ -14,15 +19,16 @@ export interface Connection {
 }
 
 export interface ConnectionFlags {
-  session: string;
+  session?: string;
   serverUrl?: string;
-  platform: string;
+  platform?: string;
 }
 
 export function parseConnection(flags: ConnectionFlags): Connection {
   if (!flags.session) throw new Error('--session is required');
+  if (!flags.platform) throw new Error('--platform is required');
 
-  const platform = flags.platform?.toLowerCase();
+  const platform = flags.platform.toLowerCase();
   if (platform !== 'ios' && platform !== 'android') {
     throw new Error(
       `--platform must be "ios" or "android" (got "${flags.platform}")`,
@@ -53,10 +59,67 @@ export function parseConnection(flags: ConnectionFlags): Connection {
 
 export function addConnectionFlags(cmd: Command) {
   return cmd
-    .requiredOption('-s, --session <id>', 'W3C session id')
-    .option('-S, --server-url <url>', 'Appium server URL', DEFAULT_SERVER_URL)
-    .requiredOption(
+    .option(
+      '-s, --session <id>',
+      'W3C session id (defaults to the latest live session in ~/.aco/sessions)',
+    )
+    .option(
+      '-S, --server-url <url>',
+      `Appium server URL (defaults to the stored session's URL, then ${DEFAULT_SERVER_URL})`,
+    )
+    .option(
       '-p, --platform <ios|android>',
-      'session platform (drives mobile: dispatch)',
+      "session platform (drives mobile: dispatch; defaults to the stored session's platform)",
     );
+}
+
+export interface ResolveResult {
+  conn: Connection;
+  source: 'flags' | 'store-by-id' | 'store-latest';
+  record?: SessionRecord;
+}
+
+export function resolveConnection(flags: ConnectionFlags): ResolveResult {
+  if (flags.session && flags.serverUrl && flags.platform) {
+    return { conn: parseConnection(flags), source: 'flags' };
+  }
+
+  if (flags.session) {
+    const rec = readSession(flags.session);
+    const serverUrl = flags.serverUrl ?? rec?.serverUrl ?? DEFAULT_SERVER_URL;
+    const platform = flags.platform ?? rec?.platform;
+    if (!rec && !flags.serverUrl) {
+      process.stderr.write(
+        `aco: warning -- no stored record for session ${flags.session}; ` +
+          `falling back to ${DEFAULT_SERVER_URL}\n`,
+      );
+    }
+    if (!platform) {
+      throw new Error(
+        `--platform is required (no stored record found for session ${flags.session})`,
+      );
+    }
+    return {
+      conn: parseConnection({ session: flags.session, serverUrl, platform }),
+      source: rec ? 'store-by-id' : 'flags',
+      record: rec ?? undefined,
+    };
+  }
+
+  const latest = latestLiveSession();
+  if (!latest) {
+    throw new Error(
+      'no --session given and no live session found in ~/.aco/sessions. ' +
+        'Start one with `aco session start ...` or pass --session explicitly.',
+    );
+  }
+  return {
+    conn: parseConnection({
+      session: latest.sessionId,
+      serverUrl: flags.serverUrl ?? latest.serverUrl,
+      platform: flags.platform ?? latest.platform,
+    }),
+    source: 'store-latest',
+    record: latest,
+  };
 }
