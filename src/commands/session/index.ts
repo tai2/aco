@@ -1,0 +1,9 @@
+import type { Command } from '@commander-js/extra-typings';
+import { registerSessionStart } from './start.js';
+
+export function registerSession(program: Command): void {
+  const session = program
+    .command('session')
+    .description('manage Appium sessions (boot a server + create a session)');
+  registerSessionStart(session);
+}

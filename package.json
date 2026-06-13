@@ -14,19 +14,24 @@
   },
   "packageManager": "pnpm@10.33.4",
   "scripts": {
-    "dev": "tsx watch src/cli.ts --",
+    "dev": "tsx src/cli.ts",
+    "dev:watch": "tsx watch src/cli.ts",
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "gen:method-map": "node --import tsx/esm scripts/generate-method-map.ts",
     "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "dependencies": {
+    "@commander-js/extra-typings": "^12.0.0",
     "commander": "^12.0.0",
-    "@commander-js/extra-typings": "^12.0.0"
+    "webdriverio": "^9.27.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "appium-uiautomator2-driver": "^7.5.2",
+    "appium-xcuitest-driver": "^11.9.0",
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.4.0",
