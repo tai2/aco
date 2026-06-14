@@ -1,0 +1,19 @@
+node_modules/
+ios/
+android/
+.expo/
+dist/
+web-build/
+.gradle/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# build artefacts
+*.apk
+*.aab
+*.app
+*.ipa
+*.dSYM.zip
