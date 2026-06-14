@@ -231,10 +231,7 @@ export function registerSessionStart(session: Command): void {
           /Could not find a connected Android device/i.test(msg)
         ) {
           process.stderr.write(
-            `aco: hint -- the AVD "${avd}" did not come up in time. ` +
-              'Bump `--session-timeout` for a cold boot, pick another AVD with ' +
-              '`--avd <name>` (see `aco device list --platform android`), ' +
-              'or boot an emulator yourself before running `session start`.\n',
+            `aco: hint -- the AVD "${avd}" did not come up in time. Bump --session-timeout for a cold boot, pick another AVD with --avd <name> (see "aco device list --platform android"), or boot an emulator yourself before running "session start".\n`,
           );
         }
         throw err;
