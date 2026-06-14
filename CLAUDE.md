@@ -120,3 +120,24 @@ git diff src/data/       # eyeball what changed
 # After bumping, audit each --platform-aware command in src/commands/
 # for params that may have been renamed or removed.
 ```
+
+## Example AUT
+
+`aut/` is an Expo app used as the target for e2e testing. It is **not**
+shipped with `aco` (the root `files: ["dist"]` in `package.json` keeps
+the `aco` npm package lean). The AUT has its own `package.json` and
+its own lockfile; root `pnpm install` does **not** pull in its deps.
+
+Every instrumented element in the AUT uses both `testID` *and*
+`accessibilityLabel` (set to the same string) via the helper
+components in `aut/src/components/Probe.tsx`. The string constants
+live in `aut/src/testids.ts`, which is the single source of truth that
+the e2e suite will import. Do not inline testID strings anywhere
+else.
+
+To extend coverage for a new `aco` command:
+
+1. Add the testID constant to `aut/src/testids.ts`.
+2. Add a screen file under `aut/app/` (or amend an existing one).
+3. Add a `<Link>` from `aut/app/index.tsx` to the new screen.
+4. Update `aut/README.md`'s screen-to-command table.

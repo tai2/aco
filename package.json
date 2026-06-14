@@ -24,6 +24,11 @@
     "lint:fix": "biome lint --write .",
     "check": "biome check .",
     "verify": "pnpm run check && pnpm run typecheck && pnpm run test && pnpm run build",
+    "aut:install": "pnpm --dir aut install",
+    "aut:prebuild": "pnpm --dir aut run prebuild",
+    "aut:start": "pnpm --dir aut run start",
+    "aut:build:ios": "pnpm --dir aut run build:ios",
+    "aut:build:android": "pnpm --dir aut run build:android",
     "gen:method-map": "node --import tsx/esm scripts/generate-method-map.ts",
     "prepublishOnly": "pnpm run verify"
   },

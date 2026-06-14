@@ -12,7 +12,11 @@
       ".vitest-cache",
       "node_modules",
       "pnpm-lock.yaml",
-      "src/data/method-map-*.json"
+      "src/data/method-map-*.json",
+      "aut/node_modules",
+      "aut/ios",
+      "aut/android",
+      "aut/.expo"
     ]
   },
   "formatter": {

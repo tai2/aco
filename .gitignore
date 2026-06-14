@@ -30,3 +30,8 @@ research.md
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# AUT generated native projects
+aut/ios/
+aut/android/
+aut/.expo/

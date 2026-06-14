@@ -145,6 +145,21 @@ pnpm build                      # produce dist/cli.js via tsup
 See `CLAUDE.md` for the driver-snapshot workflow and the rules for adding new
 `mobile:` wrappers.
 
+## Testing
+
+An example Expo-based AUT (App Under Test) lives under [`aut/`](./aut/).
+It exposes one screen per `aco` command family and is what the
+forthcoming e2e suite drives.
+
+```sh
+pnpm aut:install                # install AUT deps (~200MB, one-time)
+pnpm aut:prebuild               # generate aut/ios and aut/android
+pnpm aut:build:ios              # build .app for the iOS Simulator
+pnpm aut:build:android          # build .apk for an Android emulator
+```
+
+See [`aut/README.md`](./aut/README.md) for the screen-to-command map.
+
 ## License
 
 MIT
