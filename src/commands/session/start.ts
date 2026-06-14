@@ -9,6 +9,7 @@ import {
 } from '../../lib/appium-server.js';
 import { buildCapabilities } from '../../lib/caps.js';
 import type { Platform } from '../../lib/connection.js';
+import { listAndroidAvds } from '../../lib/devices/android.js';
 import { pickFreePort } from '../../lib/port.js';
 import {
   type SessionRecord,
@@ -175,6 +176,25 @@ export function registerSessionStart(session: Command): void {
         );
       }
 
+      // On Android, Appium will not auto-boot an emulator unless we tell it
+      // which AVD to use (or the user has booted one and passes --udid).
+      // When neither is given, default to the first discoverable AVD so
+      // `session start --platform android` works out of the box.
+      let avd = opts.avd;
+      if (platform === 'android' && !avd && !opts.udid) {
+        const { devices } = await listAndroidAvds();
+        const first = devices[0];
+        if (!first) {
+          throw new Error(
+            'aco: no Android AVD found to boot. Create one in Android Studio, ' +
+              'or boot an emulator yourself and pass `--udid`. ' +
+              'See `aco device list --platform android`.',
+          );
+        }
+        avd = first.name;
+        process.stderr.write(`aco: no --avd given, using "${avd}"\n`);
+      }
+
       const capabilities = buildCapabilities({
         platform,
         app: opts.app,
@@ -182,7 +202,7 @@ export function registerSessionStart(session: Command): void {
         deviceName: opts.deviceName,
         platformVersion: opts.platformVersion,
         udid: opts.udid,
-        avd: opts.avd,
+        avd,
         extraCaps: parseExtraCaps(opts.cap),
       });
 
@@ -207,14 +227,11 @@ export function registerSessionStart(session: Command): void {
         const msg = err instanceof Error ? err.message : String(err);
         if (
           platform === 'android' &&
-          !opts.avd &&
           !opts.udid &&
           /Could not find a connected Android device/i.test(msg)
         ) {
           process.stderr.write(
-            'aco: hint -- on Android, pass `--avd <name>` ' +
-              '(from `aco device list --platform android`) ' +
-              'to auto-boot an emulator, or boot one yourself before running `session start`.\n',
+            `aco: hint -- the AVD "${avd}" did not come up in time. Bump --session-timeout for a cold boot, pick another AVD with --avd <name> (see "aco device list --platform android"), or boot an emulator yourself before running "session start".\n`,
           );
         }
         throw err;
