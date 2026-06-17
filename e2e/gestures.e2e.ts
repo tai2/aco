@@ -1,25 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { TestIDs } from '../aut/src/testids.js';
 import { acoOk } from './helpers/aco.js';
-import { elementAttribute, elementText, findId } from './helpers/find.js';
+import { elementText, findId } from './helpers/find.js';
 import { resetToGestures } from './helpers/nav.js';
 import { isIOS } from './helpers/platform.js';
 import { startSession, stopAllSessions } from './helpers/session.js';
-
-interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-function rectCenter(elementId: string): { x: number; y: number } {
-  const rect = elementAttribute(elementId, 'rect') as Rect;
-  return {
-    x: Math.round(rect.x + rect.width / 2),
-    y: Math.round(rect.y + rect.height / 2),
-  };
-}
 
 beforeAll(() => {
   startSession();
@@ -36,9 +21,10 @@ describe('gestures: tap + swipe on /gestures', () => {
   it('tap on the target advances its counter', () => {
     const targetId = findId(TestIDs.gestures.target);
     if (isIOS) {
-      // iOS mobile: tap requires coordinates (tap.ts:24-28).
-      const { x, y } = rectCenter(targetId);
-      acoOk(['tap', '--x', String(x), '--y', String(y)]);
+      // iOS mobile: tap requires coordinates (tap.ts:24-28). With an element
+      // id present the x/y are interpreted relative to that element, so an
+      // in-bounds offset taps the target without needing absolute coords.
+      acoOk(['tap', '--element', targetId, '--x', '10', '--y', '10']);
     } else {
       // Android mobile: clickGesture accepts an element id (tap.ts:36-42).
       acoOk(['tap', '--element', targetId]);

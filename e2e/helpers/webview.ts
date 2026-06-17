@@ -11,7 +11,7 @@ function spawnSyncSleep(seconds: number): void {
 // `aco context list` until a WEBVIEW_* entry appears. The suffix is
 // `WEBVIEW_net.tai2.aco.aut` on Android and a pid-based name on iOS, so match
 // the prefix rather than a fixed name.
-export function waitForWebviewContext(timeoutMs = 15_000): string {
+export function waitForWebviewContext(timeoutMs = 30_000): string {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const contexts = JSON.parse(
