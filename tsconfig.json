@@ -18,6 +18,12 @@
     "allowImportingTsExtensions": false,
     "verbatimModuleSyntax": true
   },
-  "include": ["src/**/*", "tests/**/*", "tsup.config.ts", "vitest.config.ts"],
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "tsup.config.ts",
+    "vitest.config.ts",
+    "vitest.e2e.config.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }

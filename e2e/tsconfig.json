@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // aut/src/testids.ts is ESM-authored but lives under aut/package.json,
+    // which has no "type":"module" (aut/babel.config.js + metro.config.js are
+    // CommonJS and must stay so). NodeNext therefore detects testids.ts as CJS
+    // and verbatimModuleSyntax rejects its `export const`. Relaxing the flag
+    // for the e2e program lets us import the real testID registry directly
+    // (the no-drift guarantee, research.md §9.1) without changing the AUT.
+    "verbatimModuleSyntax": false
+  },
+  "include": ["**/*.ts", "../aut/src/testids.ts"]
+}
