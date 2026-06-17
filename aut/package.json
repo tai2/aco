@@ -9,7 +9,7 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "prebuild": "expo prebuild --no-install --clean",
-    "build:ios": "expo run:ios --no-bundler --configuration Release",
+    "build:ios": "cd ios && pod install && xcodebuild -workspace acoAUT.xcworkspace -scheme acoAUT -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO build",
     "build:android": "expo run:android --variant release --no-bundler"
   },
   "dependencies": {

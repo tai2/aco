@@ -15,7 +15,7 @@ single fork (one simulator/emulator, one session) via
 | Var                   | When            | Meaning                                              |
 | --------------------- | --------------- | ---------------------------------------------------- |
 | `ACO_E2E_PLATFORM`    | always          | `ios` or `android` (no default -- fails loud)        |
-| `ACO_AUT_IOS_APP`     | iOS             | absolute/relative path to the built `aut.app`        |
+| `ACO_AUT_IOS_APP`     | iOS             | absolute/relative path to the built `acoAUT.app`     |
 | `ACO_AUT_ANDROID_APK` | Android         | path to the built `app-release.apk`                  |
 | `ACO_E2E_DEVICE_NAME` | iOS (optional)  | simulator label, e.g. `"iPhone 15"`                  |
 | `ACO_E2E_AVD`         | Android (opt.)  | AVD name (omit to let `aco` auto-pick the first AVD) |
@@ -35,7 +35,7 @@ that fails fast with one actionable message if any prerequisite is missing.
 ```sh
 pnpm aut:install
 pnpm aut:prebuild
-pnpm aut:build:ios   # → aut/ios/build/Build/Products/Release-iphonesimulator/aut.app
+pnpm aut:build:ios   # → aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app
 appium driver install xcuitest
 # boot a simulator (Xcode or `xcrun simctl boot <udid>`), then:
 pnpm run e2e:ios     # builds dist/ first, then runs the iOS suite
@@ -45,7 +45,7 @@ pnpm run e2e:ios     # builds dist/ first, then runs the iOS suite
 `.app` if it is not on the default path:
 
 ```sh
-ACO_AUT_IOS_APP=aut/ios/build/Build/Products/Release-iphonesimulator/aut.app \
+ACO_AUT_IOS_APP=aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app \
   pnpm run e2e:ios
 ```
 

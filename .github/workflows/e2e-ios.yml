@@ -67,5 +67,5 @@ print(dev['udid'], dev['name'])")
       - name: Run iOS e2e suite
         env:
           ACO_E2E_PLATFORM: ios
-          ACO_AUT_IOS_APP: aut/ios/build/Build/Products/Release-iphonesimulator/aut.app
+          ACO_AUT_IOS_APP: aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app
         run: pnpm run test:e2e
