@@ -4,6 +4,17 @@ export default defineConfig({
   // Short-circuit PostCSS config autodiscovery (matches vitest.config.ts) so
   // vitest does not walk up the tree hunting for a postcss config.
   css: { postcss: { plugins: [] } },
+  // The specs import `aut/src/testids.ts` (directly or via helpers/nav.ts).
+  // Transforming a file under aut/ makes esbuild discover the nearest
+  // tsconfig -- aut/tsconfig.json -- which `extends: "expo/tsconfig.base"`.
+  // On CI the AUT .app comes from cache, so `pnpm aut:install` is skipped and
+  // aut/node_modules (hence expo) is absent, and that extends fails to resolve.
+  // testids.ts is plain string constants; an inline tsconfig lets esbuild
+  // transform it without searching for any tsconfig on disk. It MUST be a
+  // string -- vite only skips on-disk tsconfig discovery for a string
+  // tsconfigRaw; an object is merged with the discovered file (which is what we
+  // need to avoid).
+  esbuild: { tsconfigRaw: '{}' },
   test: {
     environment: 'node',
     include: ['e2e/**/*.e2e.ts'],
