@@ -51,6 +51,19 @@ jobs:
         id: xcode
         run: echo "build=$(xcodebuild -version | tail -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
 
+      # The WDA cache is keyed on the appium-webdriveragent version, not the
+      # xcuitest driver's: WDA is rebuilt cold whenever its Xcode project/source
+      # changes, and that project ships inside the appium-webdriveragent package
+      # (xcuitest only orchestrates the xcodebuild). Since we install Appium +
+      # xcuitest unpinned (`npm i -g appium` / `appium driver install xcuitest`),
+      # this version can drift between runs, so read it from the just-installed
+      # package rather than hard-coding it.
+      - name: Resolve WebDriverAgent version for cache key
+        id: wda
+        run: |
+          WDA_PKG=$(find "${APPIUM_HOME:-$HOME/.appium}/node_modules" -path '*appium-webdriveragent/package.json' | head -1)
+          echo "version=$(node -p "require('$WDA_PKG').version")" >> "$GITHUB_OUTPUT"
+
       # Restore only -- the matching save step runs right after the build below,
       # NOT in a post-job hook. Caches are branch-scoped: a run can read caches
       # from its own ref, its base branch, or the default branch (main) only --
@@ -108,6 +121,25 @@ jobs:
           echo "ACO_E2E_DEVICE_NAME=$NAME" >> "$GITHUB_ENV"
           echo "ACO_E2E_IOS_SDK=$SDK" >> "$GITHUB_ENV"
 
+      # Restore the prebuilt WDA DerivedData (~170MB: the WebDriverAgentRunner
+      # .app plus the .xctestrun that usePrebuiltWDA relaunches). The cold
+      # xcodebuild below takes ~3 min; a hit skips it entirely. Keyed on the same
+      # toolchain inputs as the .app cache plus the WDA source version and the
+      # iOS SDK -- the .xctestrun is SDK-stamped (e.g. iphonesimulator26.5), so a
+      # runtime bump must invalidate it. The directory is named
+      # WebDriverAgent-<hash> where the hash derives from the package's absolute
+      # path; the glob avoids hard-coding that hash, and usePrebuiltWDA=true
+      # relaunches from this exact default-derivedDataPath location. Split
+      # restore/save (like the .app) so a green pre-build seeds the cache even
+      # when the flaky boot/WDA-launch/e2e steps later fail the job -- on main
+      # that seed is what lets every PR read the cache.
+      - name: Restore prebuilt WebDriverAgent
+        id: wda-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData/WebDriverAgent-*
+          key: wda-ios-${{ runner.os }}-xcode${{ steps.xcode.outputs.build }}-wda${{ steps.wda.outputs.version }}-sdk${{ env.ACO_E2E_IOS_SDK }}
+
       # Compile WebDriverAgent once, up front. A from-scratch WDA xcodebuild on
       # a cold runner takes minutes -- longer than the driver's per-attempt
       # wdaLaunchTimeout -- so building it lazily inside the first session gets
@@ -116,7 +148,18 @@ jobs:
       # first real session only has to launch the already-compiled WDA. Pin the
       # exact device name + SDK so the build matches the runtime the session uses.
       - name: Pre-build WebDriverAgent
+        if: steps.wda-cache.outputs.cache-hit != 'true'
         run: appium driver run xcuitest build-wda --name "$ACO_E2E_DEVICE_NAME" --sdk "$ACO_E2E_IOS_SDK"
+
+      # Persist the freshly built DerivedData immediately -- before the flaky
+      # boot/WDA-launch/e2e steps -- so a green build seeds the cache regardless
+      # of how the run ends. cache-primary-key echoes the exact key restore used.
+      - name: Save prebuilt WebDriverAgent
+        if: steps.wda-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData/WebDriverAgent-*
+          key: ${{ steps.wda-cache.outputs.cache-primary-key }}
 
       - name: Run iOS e2e suite
         env:
