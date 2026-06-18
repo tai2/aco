@@ -1,16 +1,20 @@
 import { spawn, spawnSync } from 'node:child_process';
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { startAppiumServer } from '../src/lib/appium-server.js';
 import { parseConnection, resolveConnection } from '../src/lib/connection.js';
 import { listAndroidAvds } from '../src/lib/devices/android.js';
 import { renderTable, sortDevices } from '../src/lib/devices/format.js';
@@ -549,6 +553,78 @@ describe('aco CLI', () => {
       expect(parsed.notes.some((n) => /Android skipped/.test(n))).toBe(true);
     } finally {
       rmSync(home, { recursive: true, force: true });
+    }
+  });
+});
+
+function isAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ESRCH') return false;
+    return true; // e.g. EPERM -- the process exists, we just can't signal it
+  }
+}
+
+async function waitUntilDead(pid: number, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!isAlive(pid)) return true;
+    await delay(50);
+  }
+  return !isAlive(pid);
+}
+
+describe('startAppiumServer cleanup', () => {
+  // Regression: if appium spawns but never serves /status, waitForReady throws
+  // and startAppiumServer must tear the child down before rejecting. Otherwise
+  // the never-binding child is leaked as a zombie after aco exits.
+  it('SIGTERMs the spawned child when it never becomes ready', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'aco-fakeappium-'));
+    const pidFile = join(dir, 'appium.pid');
+    // A fake `appium` that records its pid and then hangs forever without ever
+    // binding a port -- exactly the "starts but never serves /status" case.
+    const fakeAppium = join(dir, 'appium');
+    writeFileSync(
+      fakeAppium,
+      [
+        '#!/usr/bin/env node',
+        `require('node:fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid));`,
+        'setInterval(() => {}, 1000);',
+        '',
+      ].join('\n'),
+      { mode: 0o755 },
+    );
+    chmodSync(fakeAppium, 0o755);
+
+    const port = 47999;
+    const savedPath = process.env.PATH;
+    const savedHome = process.env.HOME;
+    process.env.PATH = `${dir}:${savedPath ?? ''}`;
+    // Redirect HOME so the server's ~/.aco/logs write lands in the temp dir
+    // (os.homedir() honors $HOME on POSIX) and is cleaned with the rest.
+    process.env.HOME = dir;
+    let childPid: number | undefined;
+    try {
+      await expect(
+        startAppiumServer({ port, readyTimeoutMs: 500 }),
+      ).rejects.toThrow(/did not become ready/);
+
+      childPid = Number.parseInt(readFileSync(pidFile, 'utf8'), 10);
+      expect(Number.isFinite(childPid)).toBe(true);
+      expect(await waitUntilDead(childPid, 3000)).toBe(true);
+    } finally {
+      if (childPid && isAlive(childPid)) {
+        try {
+          process.kill(childPid, 'SIGKILL');
+        } catch {
+          /* ignore */
+        }
+      }
+      process.env.PATH = savedPath;
+      process.env.HOME = savedHome;
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
