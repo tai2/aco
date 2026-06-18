@@ -70,17 +70,41 @@ jobs:
 
       - name: Boot a simulator
         run: |
-          # Query the runner for the first available iPhone and capture BOTH
-          # its UDID (to boot) and its name (to hand to aco). Never hard-code
-          # a device name -- the available runtimes differ per image.
-          read -r UDID NAME < <(xcrun simctl list devices available -j \
-            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; dev=next(x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']); print(dev['udid'], dev['name'])")
+          # Query the runner for the first available iPhone and capture its
+          # UDID (to boot), name (to hand to aco) and iOS runtime version. Never
+          # hard-code a device name -- the available runtimes differ per image.
+          # The version matters: WDA is pre-built per runtime below, and the
+          # session must reuse that exact build (a mismatch forces a cold
+          # rebuild). Tab-separate: the name contains spaces ("iPhone 16 Pro"),
+          # so a plain `read UDID NAME SDK` would mis-split it.
+          IFS=$'\t' read -r UDID NAME SDK < <(xcrun simctl list devices available -j \
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; k,dev=next((k,x) for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']); print(dev['udid'], dev['name'], k.rsplit('iOS-',1)[1].replace('-','.'), sep='\t')")
           xcrun simctl boot "$UDID" || true
           # Export the device we actually queried/booted, not a guessed label.
+          # Pass the UDID too so aco pins the xcuitest session to this exact,
+          # already-booted simulator instead of matching on name (which can hit
+          # a different runtime's "iPhone 16 Pro" and cold-boot it -- slow and a
+          # frequent cause of WDA-launch flake).
+          echo "ACO_E2E_UDID=$UDID" >> "$GITHUB_ENV"
           echo "ACO_E2E_DEVICE_NAME=$NAME" >> "$GITHUB_ENV"
+          echo "ACO_E2E_IOS_SDK=$SDK" >> "$GITHUB_ENV"
+
+      # Compile WebDriverAgent once, up front. A from-scratch WDA xcodebuild on
+      # a cold runner takes minutes -- longer than the driver's per-attempt
+      # wdaLaunchTimeout -- so building it lazily inside the first session gets
+      # killed mid-build and retried until the session-create deadline, failing
+      # with `ECONNREFUSED 127.0.0.1:8100`. Pre-building warms DerivedData so the
+      # first real session only has to launch the already-compiled WDA. Pin the
+      # exact device name + SDK so the build matches the runtime the session uses.
+      - name: Pre-build WebDriverAgent
+        run: appium driver run xcuitest build-wda --name "$ACO_E2E_DEVICE_NAME" --sdk "$ACO_E2E_IOS_SDK"
 
       - name: Run iOS e2e suite
         env:
           ACO_E2E_PLATFORM: ios
           ACO_AUT_IOS_APP: aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app
+          # WDA was compiled in the pre-build step above; tell the e2e session
+          # to launch that prebuilt WDA instead of rebuilding it inside the
+          # session-create deadline.
+          ACO_E2E_PREBUILT_WDA: '1'
         run: pnpm run test:e2e

@@ -1,20 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { runAco } from './helpers/aco.js';
 import { PLATFORM } from './helpers/platform.js';
-import {
-  type StartedSession,
-  startSession,
-  stopAllSessions,
-} from './helpers/session.js';
+import { type StartedSession, startSession } from './helpers/session.js';
 
 let session: StartedSession;
 
 beforeAll(() => {
   session = startSession();
-}, 360_000);
-afterAll(() => {
-  stopAllSessions();
-});
+}, 420_000);
 
 describe('smoke: session lifecycle + snapshot/discovery commands', () => {
   it('session start wrote a live record that session list resolves', () => {
