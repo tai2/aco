@@ -65,6 +65,13 @@ export function startSession(): StartedSession {
   if (PLATFORM === 'ios' && process.env.ACO_E2E_DEVICE_NAME) {
     args.push('--device-name', process.env.ACO_E2E_DEVICE_NAME);
   }
+  if (PLATFORM === 'ios') {
+    // Insurance for the first session's WDA launch: the default 60s is tight on
+    // a busy CI runner even when WDA is pre-built. Kept well under
+    // SESSION_TIMEOUT_SEC so the createBrowser deadline (and the budgets above
+    // it) still bound the whole start.
+    args.push('--cap', 'appium:wdaLaunchTimeout=120000');
+  }
   if (PLATFORM === 'android' && process.env.ACO_E2E_AVD) {
     args.push('--avd', process.env.ACO_E2E_AVD);
   }
