@@ -43,10 +43,27 @@ jobs:
           npm i -g appium
           appium driver install xcuitest
 
+      # Cache the compiled simulator .app keyed on everything that determines
+      # it: the AUT source/config (prebuild + xcodebuild inputs) and the Xcode
+      # toolchain that compiled the binary. On a hit we skip install + prebuild
+      # + build entirely -- the e2e run only needs the .app, never aut/node_modules.
+      - name: Resolve Xcode build for cache key
+        id: xcode
+        run: echo "build=$(xcodebuild -version | tail -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache built AUT (.app)
+        id: aut-cache
+        uses: actions/cache@v4
+        with:
+          path: aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app
+          key: aut-ios-app-${{ runner.os }}-xcode${{ steps.xcode.outputs.build }}-${{ hashFiles('aut/app/**', 'aut/src/**', 'aut/assets/**', 'aut/app.json', 'aut/package.json', 'aut/pnpm-lock.yaml', 'aut/babel.config.js', 'aut/metro.config.js', 'aut/tsconfig.json') }}
+
       - name: Install AUT deps
+        if: steps.aut-cache.outputs.cache-hit != 'true'
         run: pnpm aut:install
 
       - name: Prebuild + build the AUT (.app for simulator)
+        if: steps.aut-cache.outputs.cache-hit != 'true'
         run: |
           pnpm aut:prebuild
           pnpm aut:build:ios
