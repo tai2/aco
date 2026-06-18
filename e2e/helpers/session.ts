@@ -66,11 +66,14 @@ export function startSession(): StartedSession {
     args.push('--device-name', process.env.ACO_E2E_DEVICE_NAME);
   }
   if (PLATFORM === 'ios') {
-    // Insurance for the first session's WDA launch: the default 60s is tight on
-    // a busy CI runner even when WDA is pre-built. Kept well under
-    // SESSION_TIMEOUT_SEC so the createBrowser deadline (and the budgets above
-    // it) still bound the whole start.
-    args.push('--cap', 'appium:wdaLaunchTimeout=120000');
+    // Even with WDA pre-built (no compile), the first session still has to wait
+    // for the WDA runner to boot and start serving on :8100 -- a burst of
+    // `connect ECONNREFUSED 127.0.0.1:8100` until it's up. On a slow CI runner
+    // that boot is the long pole, and the default 60s wdaLaunchTimeout (plus its
+    // kill-and-retry) expires before WDA is ready. Give one launch attempt a
+    // generous window, kept under SESSION_TIMEOUT_SEC (300s) so createBrowser
+    // and the budgets above it still bound the whole start.
+    args.push('--cap', 'appium:wdaLaunchTimeout=240000');
     if (process.env.ACO_E2E_PREBUILT_WDA) {
       // CI compiles WDA up front (workflow "Pre-build WebDriverAgent" step).
       // Without this the driver still re-runs xcodebuild inside the session,
