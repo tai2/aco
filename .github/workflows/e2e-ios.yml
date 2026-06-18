@@ -127,3 +127,14 @@ jobs:
           # session-create deadline.
           ACO_E2E_PREBUILT_WDA: '1'
         run: pnpm run test:e2e
+
+      # Appium writes its server log (incl. WDA boot timing and the :8100
+      # ECONNREFUSED polling) to ~/.aco/logs; surface it on failure so a stuck
+      # WDA launch is diagnosable without re-running.
+      - name: Upload Appium logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aco-appium-logs
+          path: ~/.aco/logs/
+          if-no-files-found: ignore
