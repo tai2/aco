@@ -71,6 +71,14 @@ export function startSession(): StartedSession {
     // SESSION_TIMEOUT_SEC so the createBrowser deadline (and the budgets above
     // it) still bound the whole start.
     args.push('--cap', 'appium:wdaLaunchTimeout=120000');
+    if (process.env.ACO_E2E_PREBUILT_WDA) {
+      // CI compiles WDA up front (workflow "Pre-build WebDriverAgent" step).
+      // Without this the driver still re-runs xcodebuild inside the session,
+      // and a cold compile blows past the create deadline. Skip the build and
+      // launch the prebuilt WDA from its (shared) DerivedData. Not set locally,
+      // where there is no pre-build step and DerivedData may be empty.
+      args.push('--cap', 'appium:usePrebuiltWDA=true');
+    }
   }
   if (PLATFORM === 'android' && process.env.ACO_E2E_AVD) {
     args.push('--avd', process.env.ACO_E2E_AVD);

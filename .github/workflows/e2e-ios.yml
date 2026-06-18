@@ -103,4 +103,8 @@ jobs:
         env:
           ACO_E2E_PLATFORM: ios
           ACO_AUT_IOS_APP: aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app
+          # WDA was compiled in the pre-build step above; tell the e2e session
+          # to launch that prebuilt WDA instead of rebuilding it inside the
+          # session-create deadline.
+          ACO_E2E_PREBUILT_WDA: '1'
         run: pnpm run test:e2e
