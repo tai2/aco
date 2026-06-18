@@ -8,6 +8,7 @@
     "scheme": "aco-aut",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",

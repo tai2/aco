@@ -150,6 +150,12 @@ export function registerSessionStart(session: Command): void {
     )
     .option('--cap <key=value...>', 'extra W3C capability (repeatable)')
     .option(
+      '--allow-insecure <feature...>',
+      'Appium insecure feature(s) to enable on the server. Appium 3 requires ' +
+        'each feature scoped to a driver or "*" ' +
+        '(e.g. uiautomator2:chromedriver_autodownload for Android webview automation)',
+    )
+    .option(
       '--session-timeout <seconds>',
       `time to wait for session creation before aborting (default: ${DEFAULT_SESSION_TIMEOUT_MS / 1000}s; bump it for cold simulator/WDA boots)`,
       (v) => Number.parseInt(v, 10),
@@ -207,7 +213,11 @@ export function registerSessionStart(session: Command): void {
       });
 
       const port = await pickFreePort(opts.port);
-      const server = await startAppiumServer({ port, tee: Boolean(opts.log) });
+      const server = await startAppiumServer({
+        port,
+        tee: Boolean(opts.log),
+        allowInsecure: opts.allowInsecure,
+      });
 
       let browser: WebdriverIO.Browser;
       try {

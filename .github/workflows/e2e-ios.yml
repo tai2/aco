@@ -1,0 +1,71 @@
+name: e2e-ios
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # Opt-in: only run when e2e-relevant paths change, to save macOS minutes.
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'aut/**'
+      - 'vitest.e2e.config.ts'
+      - '.github/workflows/e2e-ios.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install aco deps + build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      # Appium + xcuitest driver (not a repo dep -- CLAUDE.md: user-installed).
+      - name: Install Appium and xcuitest driver
+        run: |
+          npm i -g appium
+          appium driver install xcuitest
+
+      - name: Install AUT deps
+        run: pnpm aut:install
+
+      - name: Prebuild + build the AUT (.app for simulator)
+        run: |
+          pnpm aut:prebuild
+          pnpm aut:build:ios
+
+      - name: Boot a simulator
+        run: |
+          # Query the runner for the first available iPhone and capture BOTH
+          # its UDID (to boot) and its name (to hand to aco). Never hard-code
+          # a device name -- the available runtimes differ per image.
+          read -r UDID NAME < <(xcrun simctl list devices available -j \
+            | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];\
+dev=next(x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']);\
+print(dev['udid'], dev['name'])")
+          xcrun simctl boot "$UDID" || true
+          # Export the device we actually queried/booted, not a guessed label.
+          echo "ACO_E2E_DEVICE_NAME=$NAME" >> "$GITHUB_ENV"
+
+      - name: Run iOS e2e suite
+        env:
+          ACO_E2E_PLATFORM: ios
+          ACO_AUT_IOS_APP: aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app
+        run: pnpm run test:e2e

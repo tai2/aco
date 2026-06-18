@@ -17,6 +17,9 @@ export interface StartAppiumServerOptions {
   port: number;
   hostname?: string;
   tee?: boolean;
+  // Appium "insecure features" to enable on the server (e.g.
+  // `chromedriver_autodownload`). Forwarded verbatim as --allow-insecure.
+  allowInsecure?: string[];
 }
 
 export async function startAppiumServer(
@@ -30,23 +33,24 @@ export async function startAppiumServer(
     join(homedir(), '.aco', 'logs', `appium-${opts.port}.log`),
   );
 
-  const child = spawn(
-    'appium',
-    [
-      '--address',
-      hostname,
-      '--port',
-      String(opts.port),
-      '--base-path',
-      basePath,
-      '--log-level',
-      'info',
-    ],
-    {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
-    },
-  );
+  const args = [
+    '--address',
+    hostname,
+    '--port',
+    String(opts.port),
+    '--base-path',
+    basePath,
+    '--log-level',
+    'info',
+  ];
+  if (opts.allowInsecure && opts.allowInsecure.length > 0) {
+    args.push('--allow-insecure', opts.allowInsecure.join(','));
+  }
+
+  const child = spawn('appium', args, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env },
+  });
 
   child.once('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'ENOENT') {

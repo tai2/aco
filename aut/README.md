@@ -15,7 +15,7 @@ pnpm aut:start                 # dev mode (Metro on :8081), connect a sim
 
 ```sh
 pnpm aut:prebuild              # materialise aut/ios and aut/android
-pnpm aut:build:ios             # → aut/ios/build/Build/Products/Release-iphonesimulator/aut.app
+pnpm aut:build:ios             # → aut/ios/build/Build/Products/Release-iphonesimulator/acoAUT.app
 pnpm aut:build:android         # → aut/android/app/build/outputs/apk/release/app-release.apk
 ```
 

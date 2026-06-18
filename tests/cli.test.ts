@@ -272,6 +272,13 @@ describe('aco CLI', () => {
     }
   });
 
+  it('aco session start --help documents the --allow-insecure passthrough', () => {
+    const result = runCli(['session', 'start', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--allow-insecure');
+    expect(result.stdout).toContain('chromedriver_autodownload');
+  });
+
   // NOTE: `aco session start --detach` is not covered by automated tests in
   // this iteration. It would require a real `appium` binary on PATH (and an
   // AUT to connect to), which the rest of the suite also avoids. Manual smoke

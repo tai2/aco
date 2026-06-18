@@ -135,6 +135,13 @@ live in `aut/src/testids.ts`, which is the single source of truth that
 the e2e suite will import. Do not inline testID strings anywhere
 else.
 
+`aut/src/testids.ts` **must stay import-free** — pure string constants
+and helper functions with no React Native (or any runtime) imports. The
+`e2e/` suite imports it directly across the `aut/` boundary
+(`e2e/tsconfig.json` relaxes `verbatimModuleSyntax` so the CJS-detected
+file type-checks); adding an RN import there would break the e2e
+typecheck/transform.
+
 To extend coverage for a new `aco` command:
 
 1. Add the testID constant to `aut/src/testids.ts`.
