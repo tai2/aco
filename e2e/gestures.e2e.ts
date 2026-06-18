@@ -8,7 +8,7 @@ import { startSession, stopAllSessions } from './helpers/session.js';
 
 beforeAll(() => {
   startSession();
-}, 360_000);
+}, 420_000);
 afterAll(() => {
   stopAllSessions();
 });

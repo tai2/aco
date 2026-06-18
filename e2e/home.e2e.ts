@@ -12,7 +12,7 @@ beforeAll(() => {
   startSession();
   // Ensure we are on the root route before reading Home.
   resetApp();
-}, 360_000);
+}, 420_000);
 afterAll(() => {
   stopAllSessions();
 });

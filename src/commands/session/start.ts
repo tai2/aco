@@ -73,7 +73,7 @@ function readFirstLine(
   });
 }
 
-async function detachAndExit(): Promise<void> {
+async function detachAndExit(sessionTimeoutSec: number): Promise<void> {
   const entry = process.argv[1];
   if (!entry || !entry.endsWith('.js')) {
     process.stderr.write(
@@ -102,8 +102,45 @@ async function detachAndExit(): Promise<void> {
     throw new Error('aco: failed to capture detached child stdio');
   }
 
-  const envelope = await readFirstLine(child.stdout, 60_000);
+  // The envelope only lands once the session is created, so wait at least as
+  // long as the child's own --session-timeout, plus a margin for the Appium
+  // server to boot. A flat 60s here would defeat --session-timeout on cold
+  // simulator/WDA boots and kill a session that was still coming up.
+  const envelopeTimeoutMs = (sessionTimeoutSec + 60) * 1000;
 
+  // Buffer the child's stderr from the start: if it dies before emitting an
+  // envelope, this is the only place the real Appium/WDA failure is visible.
+  let earlyErr = '';
+  const onEarlyErr = (chunk: Buffer) => {
+    earlyErr += chunk.toString('utf8');
+  };
+  child.stderr.on('data', onEarlyErr);
+
+  let envelope: string;
+  try {
+    envelope = await Promise.race([
+      readFirstLine(child.stdout, envelopeTimeoutMs),
+      new Promise<never>((_, reject) => {
+        child.once('exit', (code, signal) => {
+          const how = signal ? `signal ${signal}` : `code ${code}`;
+          reject(
+            new Error(
+              `aco: session start exited (${how}) before creating a session\n${earlyErr}`,
+            ),
+          );
+        });
+      }),
+    ]);
+  } catch (err) {
+    bootstrapLog.write(earlyErr);
+    process.stderr.write(
+      `${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    process.exit(1);
+  }
+
+  child.stderr.off('data', onEarlyErr);
+  bootstrapLog.write(earlyErr);
   child.stdout.pipe(bootstrapLog);
   child.stderr.pipe(bootstrapLog);
 
@@ -171,7 +208,7 @@ export function registerSessionStart(session: Command): void {
     )
     .action(async (opts) => {
       if (opts.detach) {
-        await detachAndExit();
+        await detachAndExit(opts.sessionTimeout);
         return;
       }
 

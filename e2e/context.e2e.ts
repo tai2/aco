@@ -21,7 +21,7 @@ const WEBVIEW_UNAVAILABLE = /no WEBVIEW_.* context|chromedriver/i;
 beforeAll(() => {
   startSession();
   resetToWebview();
-}, 360_000);
+}, 420_000);
 afterAll(() => {
   stopAllSessions();
 });

@@ -13,18 +13,25 @@ export interface AcoResult {
   stderr: string;
 }
 
-export function runAco(args: string[], env?: NodeJS.ProcessEnv): AcoResult {
+export interface RunOptions {
+  env?: NodeJS.ProcessEnv;
+  // Most calls are fast (a cold find takes a couple of seconds); `session
+  // start` is the exception -- a cold simulator/WDA boot can run for minutes,
+  // so it overrides this to a value above its own --session-timeout.
+  timeoutMs?: number;
+}
+
+export function runAco(args: string[], opts: RunOptions = {}): AcoResult {
   const r = spawnSync('node', [cliEntry, ...args], {
     encoding: 'utf8',
-    env: env ? { ...process.env, ...env } : process.env,
-    // A cold find can take a couple of seconds; most calls are fast.
-    timeout: 60_000,
+    env: opts.env ? { ...process.env, ...opts.env } : process.env,
+    timeout: opts.timeoutMs ?? 60_000,
   });
   return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
 }
 
-export function acoOk(args: string[]): AcoResult {
-  const r = runAco(args);
+export function acoOk(args: string[], opts: RunOptions = {}): AcoResult {
+  const r = runAco(args, opts);
   if (r.status !== 0) {
     throw new Error(
       `aco ${args.join(' ')} exited ${r.status}\nstdout: ${r.stdout}\nstderr: ${r.stderr}`,
