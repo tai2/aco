@@ -20,6 +20,9 @@ export interface StartAppiumServerOptions {
   // Appium "insecure features" to enable on the server (e.g.
   // `chromedriver_autodownload`). Forwarded verbatim as --allow-insecure.
   allowInsecure?: string[];
+  // How long to wait for the spawned server to start serving /status before
+  // giving up (and tearing the child down). Defaults to 30s.
+  readyTimeoutMs?: number;
 }
 
 export async function startAppiumServer(
@@ -72,7 +75,22 @@ export async function startAppiumServer(
   }
 
   const serverUrl = `http://${hostname}:${opts.port}`;
-  await waitForReady(serverUrl, 30_000);
+  try {
+    await waitForReady(serverUrl, opts.readyTimeoutMs ?? 30_000);
+  } catch (err) {
+    // We spawned this child; if it never became ready we own tearing it down.
+    // Without this, a never-binding Appium (e.g. one wedged before listening)
+    // is left as a zombie after startAppiumServer rejects, since the caller
+    // only kills the server in the createBrowser failure branch.
+    if (child.pid) {
+      try {
+        process.kill(child.pid, 'SIGTERM');
+      } catch (killErr) {
+        if ((killErr as NodeJS.ErrnoException).code !== 'ESRCH') throw killErr;
+      }
+    }
+    throw err;
+  }
 
   return {
     child,
