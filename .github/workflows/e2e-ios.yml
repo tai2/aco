@@ -57,9 +57,7 @@ jobs:
           # its UDID (to boot) and its name (to hand to aco). Never hard-code
           # a device name -- the available runtimes differ per image.
           read -r UDID NAME < <(xcrun simctl list devices available -j \
-            | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];\
-dev=next(x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']);\
-print(dev['udid'], dev['name'])")
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; dev=next(x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']); print(dev['udid'], dev['name'])")
           xcrun simctl boot "$UDID" || true
           # Export the device we actually queried/booted, not a guessed label.
           echo "ACO_E2E_DEVICE_NAME=$NAME" >> "$GITHUB_ENV"
