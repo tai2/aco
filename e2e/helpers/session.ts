@@ -27,6 +27,12 @@ export function startSession(): StartedSession {
   if (PLATFORM === 'android' && process.env.ACO_E2E_AVD) {
     args.push('--avd', process.env.ACO_E2E_AVD);
   }
+  if (PLATFORM === 'android') {
+    // Let the uiautomator2 driver fetch a Chromedriver matching the device's
+    // system WebView so `context switch` into the WEBVIEW_* context works.
+    // Appium 3 requires insecure features to be scoped to a driver (or '*').
+    args.push('--allow-insecure', 'uiautomator2:chromedriver_autodownload');
+  }
   const r = acoOk(args);
   // `session start --detach` prints exactly one JSON envelope line on stdout.
   return JSON.parse(r.stdout.trim()) as StartedSession;

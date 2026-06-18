@@ -23,9 +23,9 @@ describe('element actions on /elements', () => {
   });
 
   it('reads the uncontrolled input value attribute', () => {
-    expect(elementAttribute(findId(TestIDs.elements.input), 'value')).toBe(
-      'initial-value',
-    );
+    expect(
+      elementAttribute(findId(TestIDs.elements.input), expected.valueAttr),
+    ).toBe('initial-value');
   });
 
   it('click advances the tap counter', () => {

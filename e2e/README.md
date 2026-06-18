@@ -68,6 +68,15 @@ ACO_E2E_PLATFORM=android \
 `aco session start --platform android` auto-picks the first AVD if `--avd`
 is omitted, so `ACO_E2E_AVD` is optional.
 
+The webview/context spec drives the embedded webview, which needs a
+Chromedriver matching the device's system WebView. The harness starts the
+session with `--allow-insecure uiautomator2:chromedriver_autodownload` (Appium
+3 requires insecure features scoped to a driver) so the uiautomator2 driver
+fetches the right Chromedriver automatically; the first
+run downloads it (needs network), later runs use the cache. If the download
+is unavailable (e.g. offline), that one spec skips itself rather than
+failing.
+
 ## The `pnpm run build` caveat
 
 `aco session start --detach` refuses to run under tsx and requires the

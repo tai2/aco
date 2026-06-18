@@ -41,4 +41,7 @@ export const expected = {
   // The XML attribute that carries the accessibility id differs per driver
   // (research.md §8.3): XCUITest exposes `name`, UiAutomator2 `content-desc`.
   xpathAttr: isIOS ? 'name' : 'content-desc',
+  // Reading a text field's current contents: XCUITest uses `value`,
+  // UiAutomator2 has no `value` attribute and exposes the text as `text`.
+  valueAttr: isIOS ? 'value' : 'text',
 } as const;
