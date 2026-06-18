@@ -1,8 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { acoOk } from './helpers/aco.js';
 import { elementText, findId } from './helpers/find.js';
 import { resetToWebview } from './helpers/nav.js';
-import { startSession, stopAllSessions } from './helpers/session.js';
+import { startSession } from './helpers/session.js';
 import { waitForWebviewContext } from './helpers/webview.js';
 
 // HTML element ids from the bundled page in aut/assets/webview.html. They are
@@ -22,9 +22,6 @@ beforeAll(() => {
   startSession();
   resetToWebview();
 }, 420_000);
-afterAll(() => {
-  stopAllSessions();
-});
 
 describe('webview context switching on /webview', () => {
   it('drives the embedded webview through a context switch and back', (ctx) => {

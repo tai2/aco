@@ -1,21 +1,18 @@
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { TestIDs } from '../aut/src/testids.js';
 import { acoOk } from './helpers/aco.js';
 import { elementText, findId } from './helpers/find.js';
 import { resetApp } from './helpers/nav.js';
-import { startSession, stopAllSessions } from './helpers/session.js';
+import { startSession } from './helpers/session.js';
 
 beforeAll(() => {
   startSession();
   // Ensure we are on the root route before reading Home.
   resetApp();
 }, 420_000);
-afterAll(() => {
-  stopAllSessions();
-});
 
 describe('Home screen: source, screenshot, find+text', () => {
   it('source contains the Home testID strings', () => {

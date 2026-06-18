@@ -77,6 +77,11 @@ jobs:
             | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; dev=next(x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']); print(dev['udid'], dev['name'])")
           xcrun simctl boot "$UDID" || true
           # Export the device we actually queried/booted, not a guessed label.
+          # Pass the UDID too so aco pins the xcuitest session to this exact,
+          # already-booted simulator instead of matching on name (which can hit
+          # a different runtime's "iPhone 16 Pro" and cold-boot it -- slow and a
+          # frequent cause of WDA-launch flake).
+          echo "ACO_E2E_UDID=$UDID" >> "$GITHUB_ENV"
           echo "ACO_E2E_DEVICE_NAME=$NAME" >> "$GITHUB_ENV"
 
       - name: Run iOS e2e suite

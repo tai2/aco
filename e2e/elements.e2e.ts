@@ -1,17 +1,14 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { TestIDs } from '../aut/src/testids.js';
 import { acoOk, runAco } from './helpers/aco.js';
 import { elementAttribute, elementText, findId } from './helpers/find.js';
 import { resetToElements } from './helpers/nav.js';
 import { expected, isAndroid, isIOS } from './helpers/platform.js';
-import { startSession, stopAllSessions } from './helpers/session.js';
+import { startSession } from './helpers/session.js';
 
 beforeAll(() => {
   startSession();
 }, 420_000);
-afterAll(() => {
-  stopAllSessions();
-});
 
 describe('element actions on /elements', () => {
   beforeEach(() => {

@@ -1,17 +1,14 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { TestIDs } from '../aut/src/testids.js';
 import { acoOk } from './helpers/aco.js';
 import { elementText, findId } from './helpers/find.js';
 import { resetToGestures } from './helpers/nav.js';
 import { isIOS } from './helpers/platform.js';
-import { startSession, stopAllSessions } from './helpers/session.js';
+import { startSession } from './helpers/session.js';
 
 beforeAll(() => {
   startSession();
 }, 420_000);
-afterAll(() => {
-  stopAllSessions();
-});
 
 describe('gestures: tap + swipe on /gestures', () => {
   beforeEach(() => {

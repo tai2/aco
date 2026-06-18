@@ -1,14 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { acoOk, runAco } from './helpers/aco.js';
 import { APP_IDENTIFIER, isIOS } from './helpers/platform.js';
-import { startSession, stopAllSessions } from './helpers/session.js';
+import { startSession } from './helpers/session.js';
 
 beforeAll(() => {
   startSession();
 }, 420_000);
-afterAll(() => {
-  stopAllSessions();
-});
 
 describe('mobile call escape hatch', () => {
   it('rejects an unknown extension before any RPC', () => {
