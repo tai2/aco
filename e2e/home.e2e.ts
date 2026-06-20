@@ -6,6 +6,7 @@ import { TestIDs } from '../aut/src/testids.js';
 import { acoOk } from './helpers/aco.js';
 import { elementText, findId } from './helpers/find.js';
 import { resetApp } from './helpers/nav.js';
+import { expected } from './helpers/platform.js';
 import { startSession } from './helpers/session.js';
 
 beforeAll(() => {
@@ -19,6 +20,16 @@ describe('Home screen: source, screenshot, find+text', () => {
     const xml = acoOk(['source']).stdout;
     expect(xml).toContain(TestIDs.home.title);
     expect(xml).toContain(TestIDs.home.navElements);
+  });
+
+  it('source --xpath filters to the Home title node client-side', () => {
+    const out = acoOk([
+      'source',
+      '--xpath',
+      `//*[@${expected.xpathAttr}="${TestIDs.home.title}"]`,
+    ]).stdout;
+    expect(out.trim()).not.toBe('');
+    expect(out).toContain(TestIDs.home.title);
   });
 
   it('screenshot --out produces a non-empty PNG', () => {

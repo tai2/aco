@@ -493,6 +493,13 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('--json');
   });
 
+  it('aco source --help documents --xpath', () => {
+    const result = runCli(['source', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/--xpath/);
+    expect(result.stdout).toMatch(/XPath/);
+  });
+
   it('aco element displayed --help documents --element', () => {
     const result = runCli(['element', 'displayed', '--help']);
     expect(result.status).toBe(0);

@@ -118,6 +118,7 @@ captured at `~/.aco/logs/aco-detach-<parent-pid>.log` for postmortem debugging.
 # With a live local session, all three flags are optional -- they're resolved
 # from the latest record under ~/.aco/sessions/.
 aco source
+aco source --xpath '//XCUIElementTypeButton[@name="Login"]'   # filter locally
 aco screenshot --out ./shot.png
 aco tap        --x 100 --y 200
 aco swipe      --direction up
@@ -129,6 +130,17 @@ aco context list
 aco source     --session <sid> --platform ios
 aco source     --session <sid> --server-url http://10.0.0.5:4799 --platform ios
 ```
+
+`aco source --xpath <expr>` evaluates the expression **client-side in Node.js**
+against the XML that `GET /source` returns -- distinct from `aco element find
+--using xpath`, which sends the expression to the driver to evaluate against its
+internal element tree. Because it runs over the serialized page source, it can
+extract node fragments, attribute values, and `count()`/`string()` results that
+`find` (element-ids only) cannot. Node-set matches print as XML fragments
+(newline-joined); `count()`/`string()`/boolean results print as plain text. The
+XML schema is platform-specific (iOS exposes `name`/`label`, Android exposes
+`content-desc`/`text` -- see `e2e/helpers/platform.ts`), so XPath expressions are
+platform-coupled, the same as the server-side path.
 
 ### 3. Inspect / call any `mobile:` extension
 
