@@ -122,6 +122,7 @@ aco source --xpath '//XCUIElementTypeButton[@name="Login"]'   # filter locally
 aco screenshot --out ./shot.png
 aco tap        --x 100 --y 200
 aco swipe      --direction up
+aco scroll-into-view "accessibility id:gestures.row.29" --direction up   # swipe until visible
 aco actions    --gesture "move 200 600 0, down, move 200 200 300, up"   # raw W3C pointer
 aco actions    --type "hello"                                          # raw W3C key (typing)
 aco actions    --gesture "move 200 600 0, down" --no-release           # hold across calls
@@ -157,6 +158,18 @@ the `--json` escape hatch passes a raw W3C actions array straight through,
 untouched. By contrast, `aco tap`/`aco swipe` ride the driver-specific `mobile:`
 extension layer. Gestures release held input state by default; `--no-release`
 holds it across calls and `--release-only` issues the standalone cleanup.
+
+`aco scroll-into-view` wraps WebdriverIO's `element.scrollIntoView` intact --
+unlike `tap`/`swipe` it takes a **WDIO selector string** (e.g.
+`"accessibility id:gestures.row.29"`), not an element id, because WDIO
+re-resolves the target as it swipes until the element is displayed. It defaults
+to `direction up` and `maxScrolls 10` and uses the platform default scroll
+container unless `--scrollable <selector>` is given. It targets the **native**
+context. On Android with gesture navigation, a full-height scroll container can
+make the default `--percent 0.95` swipe start inside the system gesture zone at
+the screen edge (backgrounding the app instead of scrolling); pass a smaller
+`--percent` (e.g. `0.5`) or a `--scrollable <selector>` that doesn't reach the
+edge to avoid it.
 
 ### 3. Inspect / call any `mobile:` extension
 
