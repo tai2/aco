@@ -730,8 +730,10 @@ describe('startAppiumServer cleanup', () => {
         'const args = process.argv.slice(2);',
         'const port = Number(args[args.indexOf("--port") + 1]);',
         'const host = args[args.indexOf("--address") + 1];',
+        'const basePath = args[args.indexOf("--base-path") + 1];',
+        'const statusPath = basePath.replace(/\\/+$/, "") + "/status";',
         'const server = http.createServer((req, res) => {',
-        '  if (req.url === "/status") { res.writeHead(200); res.end("{}"); return; }',
+        '  if (req.url === statusPath) { res.writeHead(200); res.end("{}"); return; }',
         '  res.writeHead(404); res.end();',
         '});',
         'server.listen(port, host);',
@@ -764,6 +766,10 @@ describe('startAppiumServer cleanup', () => {
         readyTimeoutMs: 5000,
       });
       pid = server.pid;
+
+      // serverUrl must carry the base-path so the session record and attach
+      // subcommands route under it (parseConnection derives basePath back out).
+      expect(server.serverUrl).toBe('http://0.0.0.0:47998/wd/hub');
 
       const argv = JSON.parse(readFileSync(argvFile, 'utf8')) as string[];
       const flagValue = (flag: string) => argv[argv.indexOf(flag) + 1];

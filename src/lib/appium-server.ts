@@ -126,9 +126,16 @@ export async function startAppiumServer(
     child.stderr?.pipe(process.stdout);
   }
 
-  const serverUrl = `http://${hostname}:${opts.port}`;
+  // serverUrl carries the base-path so it is the full, canonical URL the
+  // session record stores and subcommands attach to (parseConnection derives
+  // basePath back out of the pathname). For the default "/" the suffix is empty.
+  const baseSuffix = basePath.replace(/\/+$/, '');
+  const serverUrl = `http://${hostname}:${opts.port}${baseSuffix}`;
+  // Appium serves /status under --base-path, so a non-default base-path must be
+  // included in the readiness probe or it 404s and we never see a 200.
+  const statusUrl = `${serverUrl}/status`;
   try {
-    await waitForReady(serverUrl, opts.readyTimeoutMs ?? 30_000);
+    await waitForReady(statusUrl, opts.readyTimeoutMs ?? 30_000);
   } catch (err) {
     // We spawned this child; if it never became ready we own tearing it down.
     // Without this, a never-binding Appium (e.g. one wedged before listening)
@@ -155,14 +162,14 @@ export async function startAppiumServer(
 }
 
 async function waitForReady(
-  serverUrl: string,
+  statusUrl: string,
   timeoutMs: number,
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   let lastErr: unknown;
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(`${serverUrl}/status`);
+      const res = await fetch(statusUrl);
       if (res.ok) return;
     } catch (err) {
       lastErr = err;
@@ -170,7 +177,7 @@ async function waitForReady(
     await delay(250);
   }
   throw new Error(
-    `Appium server did not become ready within ${timeoutMs}ms at ${serverUrl}. ` +
+    `Appium server did not become ready within ${timeoutMs}ms at ${statusUrl}. ` +
       `Last error: ${String(lastErr ?? 'n/a')}. Check ~/.aco/logs/appium-*.log for details.`,
   );
 }
