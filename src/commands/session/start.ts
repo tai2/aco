@@ -193,6 +193,58 @@ export function registerSessionStart(session: Command): void {
         '(e.g. uiautomator2:chromedriver_autodownload for Android webview automation)',
     )
     .option(
+      '--deny-insecure <feature...>',
+      'Appium insecure feature(s) to disable. Only takes effect with ' +
+        '--allow-insecure or --relaxed-security, and is applied last (deny wins)',
+    )
+    .option(
+      '--relaxed-security',
+      'enable Appium --relaxed-security (allow all insecure features). ' +
+        'Use only on a trusted local network; claw back features with --deny-insecure',
+    )
+    .option('--allow-cors', 'allow browser (CORS) connections to the server')
+    .option(
+      '--base-path <path>',
+      'URL prefix for all WebDriver routes on the spawned server (default: /)',
+    )
+    .option(
+      '--log-level <level>',
+      'Appium server log level: debug | info | warn | error, or ' +
+        'console:file (e.g. warn:debug) (default: info)',
+    )
+    .option(
+      '--use-drivers <name...>',
+      'restrict which installed Appium drivers to activate (default: all)',
+    )
+    .option(
+      '--use-plugins <name...>',
+      'Appium plugins to activate (default: none; e.g. images, element-wait)',
+    )
+    .option(
+      '--address <host>',
+      'interface for the spawned server to bind. Defaults to 127.0.0.1 ' +
+        '(local-only); set to 0.0.0.0 or a specific IP to expose it on a ' +
+        'trusted network',
+    )
+    .option(
+      '--keep-alive-timeout <seconds>',
+      'Appium HTTP keep-alive/connection timeout in seconds; 0 disables ' +
+        '(default: 600)',
+      (v) => Number.parseInt(v, 10),
+    )
+    .option(
+      '--request-timeout <seconds>',
+      'Appium timeout in seconds for receiving the full HTTP request; ' +
+        '0 disables (default: 3600)',
+      (v) => Number.parseInt(v, 10),
+    )
+    .option(
+      '--shutdown-timeout <ms>',
+      'Appium grace period in milliseconds for active connections to close ' +
+        'on shutdown (default: 5000)',
+      (v) => Number.parseInt(v, 10),
+    )
+    .option(
       '--session-timeout <seconds>',
       `time to wait for session creation before aborting (default: ${DEFAULT_SESSION_TIMEOUT_MS / 1000}s; bump it for cold simulator/WDA boots)`,
       (v) => Number.parseInt(v, 10),
@@ -253,7 +305,20 @@ export function registerSessionStart(session: Command): void {
       const server = await startAppiumServer({
         port,
         tee: Boolean(opts.log),
+        // --address forwards to the existing internal `hostname` option, which
+        // keeps its 127.0.0.1 default when --address is omitted.
+        hostname: opts.address,
         allowInsecure: opts.allowInsecure,
+        denyInsecure: opts.denyInsecure,
+        relaxedSecurity: opts.relaxedSecurity,
+        allowCors: opts.allowCors,
+        basePath: opts.basePath,
+        logLevel: opts.logLevel,
+        useDrivers: opts.useDrivers,
+        usePlugins: opts.usePlugins,
+        keepAliveTimeout: opts.keepAliveTimeout,
+        requestTimeout: opts.requestTimeout,
+        shutdownTimeout: opts.shutdownTimeout,
       });
 
       let browser: WebdriverIO.Browser;
