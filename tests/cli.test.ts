@@ -52,6 +52,16 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('aco');
     expect(result.stdout).toContain('session');
     expect(result.stdout).toContain('mobile');
+    expect(result.stdout).toContain('actions');
+  });
+
+  it('aco actions --help surfaces the release flags', () => {
+    const result = runCli(['actions', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--gesture');
+    expect(result.stdout).toContain('--type');
+    expect(result.stdout).toContain('--no-release');
+    expect(result.stdout).toContain('--release-only');
   });
 
   it('lists mobile: extensions for ios from the bundled snapshot', () => {

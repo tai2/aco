@@ -1,4 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
+import { registerActions } from './commands/actions.js';
 import { registerContext } from './commands/context/index.js';
 import { registerDevice } from './commands/device/index.js';
 import { registerElement } from './commands/element/index.js';
@@ -35,6 +36,7 @@ registerSource(program);
 registerScreenshot(program);
 registerTap(program);
 registerSwipe(program);
+registerActions(program);
 registerContext(program);
 registerMobile(program);
 registerDevice(program);

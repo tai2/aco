@@ -122,6 +122,10 @@ aco source --xpath '//XCUIElementTypeButton[@name="Login"]'   # filter locally
 aco screenshot --out ./shot.png
 aco tap        --x 100 --y 200
 aco swipe      --direction up
+aco actions    --gesture "move 200 600 0, down, move 200 200 300, up"   # raw W3C pointer
+aco actions    --type "hello"                                          # raw W3C key (typing)
+aco actions    --gesture "move 200 600 0, down" --no-release           # hold across calls
+aco actions    --release-only                                         # release the held state
 aco element find  --using "accessibility id" --value "Login"
 aco element click --element <element-id>
 aco context list
@@ -141,6 +145,18 @@ extract node fragments, attribute values, and `count()`/`string()` results that
 XML schema is platform-specific (iOS exposes `name`/`label`, Android exposes
 `content-desc`/`text` -- see `e2e/helpers/platform.ts`), so XPath expressions are
 platform-coupled, the same as the server-side path.
+
+`aco actions` is the **cross-platform W3C Actions path** (`POST /actions`): one
+code path on both drivers, no `mobile:` extension or `--platform` shim. Each
+`--gesture` is one comma-separated pointer chain (`move <x> <y> [ms]`, `down`,
+`up`, `pause <ms>`, `cancel`); repeat `--gesture` for parallel multi-touch
+chains. `--type <text>` appends a key source that types the text into the
+focused field (focus it first with a `--gesture` tap or `aco tap`). `pointerType`
+defaults to `touch` for the ergonomic form (overridable with `--pointer-type`);
+the `--json` escape hatch passes a raw W3C actions array straight through,
+untouched. By contrast, `aco tap`/`aco swipe` ride the driver-specific `mobile:`
+extension layer. Gestures release held input state by default; `--no-release`
+holds it across calls and `--release-only` issues the standalone cleanup.
 
 ### 3. Inspect / call any `mobile:` extension
 
