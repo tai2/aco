@@ -463,6 +463,62 @@ describe('aco CLI', () => {
     expect(result.stdout.toLowerCase()).toMatch(/simulators|avds/);
   });
 
+  it('aco settings --help documents get and set subcommands', () => {
+    const result = runCli(['settings', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('get');
+    expect(result.stdout).toContain('set');
+  });
+
+  it('aco settings set --help documents --set and --json', () => {
+    const result = runCli(['settings', 'set', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--set');
+    expect(result.stdout).toContain('--json');
+  });
+
+  it('aco element displayed --help documents --element', () => {
+    const result = runCli(['element', 'displayed', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--element');
+  });
+
+  it('aco element rect --help documents --element', () => {
+    const result = runCli(['element', 'rect', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--element');
+  });
+
+  it('aco url --help documents the optional [url] argument', () => {
+    const result = runCli(['url', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('url');
+    expect(result.stdout).toContain('[url]');
+  });
+
+  it('aco timeouts --help documents get and set subcommands', () => {
+    const result = runCli(['timeouts', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('get');
+    expect(result.stdout).toContain('set');
+  });
+
+  it('aco wait --help documents the locator and polling flags', () => {
+    const result = runCli(['wait', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--using');
+    expect(result.stdout).toContain('--value');
+    expect(result.stdout).toContain('--for');
+    expect(result.stdout).toContain('--timeout');
+    expect(result.stdout).toContain('--interval');
+  });
+
+  it('aco status --help exits 0 and mentions /status', () => {
+    const result = runCli(['status', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('status');
+  });
+
   it('aco device list --json --platform android with synthetic ANDROID_AVD_HOME returns JSON', () => {
     const home = makeTmpHome();
     const avdDir = join(home, 'avds');

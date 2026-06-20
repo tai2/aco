@@ -44,6 +44,13 @@ describe('webview context switching on /webview', () => {
         'clicked',
       );
 
+      // Web navigation commands operate on the active WEBVIEW_* context.
+      // The bundled page exposes a non-empty URL...
+      expect(acoOk(['url']).stdout.trim().length).toBeGreaterThan(0);
+      // ...and reloading it resets the click output back to idle.
+      acoOk(['refresh']);
+      expect(elementText(findId(OUTPUT_SELECTOR, 'css selector'))).toBe('idle');
+
       acoOk(['context', 'switch', '--name', 'NATIVE_APP']);
       expect(acoOk(['context', 'current']).stdout.trim()).toBe('NATIVE_APP');
     } catch (err) {
