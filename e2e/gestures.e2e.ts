@@ -39,4 +39,27 @@ describe('gestures: tap + swipe on /gestures', () => {
     const xml = acoOk(['source']).stdout;
     expect(xml).toContain(TestIDs.gestures.row(29));
   });
+
+  it('scroll-into-view brings a deep row on screen', () => {
+    // row(29) is below the fold, so we scroll "up" (finger bottom -> top, the
+    // WDIO default) to reveal lower content. "down" would scroll toward the top
+    // of the list and never reach it (WDIO calculateFromTo, build/node.js:6101).
+    //
+    // --percent 0.5 keeps the swipe in the middle of the scrollable element.
+    // The /gestures ScrollView is flex:1 and reaches the screen bottom, so the
+    // default percent (0.95) starts the swipe at ~97.5% down -- inside Android's
+    // bottom gesture-nav zone, which backgrounds the app instead of scrolling.
+    const r = acoOk([
+      'scroll-into-view',
+      `accessibility id:${TestIDs.gestures.row(29)}`,
+      '--direction',
+      'up',
+      '--percent',
+      '0.5',
+    ]);
+    expect(r.stdout.trim()).toBe('ok');
+    // On success WDIO confirms the row is displayed (either it scrolled to it or
+    // it was already on screen). This exercises the real scroll-until-visible
+    // loop end-to-end against the live driver.
+  });
 });
