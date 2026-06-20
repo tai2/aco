@@ -26,7 +26,7 @@ pnpm aut:build:android         # → aut/android/app/build/outputs/apk/release/a
 | Home | `/` | `source`, `screenshot`, `element find` smoke |
 | Elements | `/elements` | `element find` (every strategy), `click`, `text`, `attribute` |
 | Keyboard | `/keyboard` | `element send-keys` (round-trip with echo) |
-| Gestures | `/gestures` | `tap`, `swipe`, `mobile call mobile: tap / mobile: swipe` |
+| Gestures | `/gestures` | `tap`, `swipe`, `actions` (W3C pointer/key), `mobile call mobile: tap / mobile: swipe` |
 | WebView | `/webview` | `context list`, `context current`, `context switch` |
 
 Future screens (not yet implemented; nav links disabled on Home):

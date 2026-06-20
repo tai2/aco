@@ -26,6 +26,8 @@ export const TestIDs = Object.freeze({
     scroll: 'gestures.scroll',
     target: 'gestures.target',
     taps: 'gestures.taps',
+    typeField: 'gestures.type.field',
+    typedValue: 'gestures.type.value',
     row: (n: number) => `gestures.row.${n}`,
     rowText: (n: number) => `gestures.row.${n}.text`,
   },

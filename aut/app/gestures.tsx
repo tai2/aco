@@ -3,12 +3,14 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import {
   MarkedPressable,
   MarkedText,
+  MarkedTextInput,
   MarkedView,
 } from '../src/components/Probe';
 import { TestIDs } from '../src/testids';
 
 export default function GesturesScreen() {
   const [taps, setTaps] = useState(0);
+  const [typed, setTyped] = useState('');
   return (
     <View style={styles.root}>
       <MarkedPressable
@@ -18,6 +20,18 @@ export default function GesturesScreen() {
       >
         <MarkedText id={TestIDs.gestures.taps}>{`taps:${taps}`}</MarkedText>
       </MarkedPressable>
+
+      <MarkedTextInput
+        id={TestIDs.gestures.typeField}
+        style={styles.typeField}
+        onChangeText={setTyped}
+        value={typed}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      <MarkedText
+        id={TestIDs.gestures.typedValue}
+      >{`typed:${typed}`}</MarkedText>
 
       <ScrollView
         testID={TestIDs.gestures.scroll}
@@ -45,6 +59,12 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#0a66c2',
     alignItems: 'center',
+  },
+  typeField: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 12,
+    margin: 16,
   },
   scroll: { flex: 1, padding: 16 },
   row: {

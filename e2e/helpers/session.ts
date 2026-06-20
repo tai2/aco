@@ -87,6 +87,14 @@ export function startSession(): StartedSession {
     args.push('--avd', process.env.ACO_E2E_AVD);
   }
   if (PLATFORM === 'android') {
+    // Force the device into English (US) for the session. The on-screen IME
+    // follows the system language; on a Japanese-locale emulator a romaji
+    // keyboard composes typed letters into kana ("hi" -> "ひ") and renders
+    // digits full-width ("42" -> "４２"), which breaks `actions --type`
+    // round-trips. uiautomator2's language/locale caps set this at session
+    // start and restore the original on teardown.
+    args.push('--cap', 'appium:language=en');
+    args.push('--cap', 'appium:locale=US');
     // Let the uiautomator2 driver fetch a Chromedriver matching the device's
     // system WebView so `context switch` into the WEBVIEW_* context works.
     // Appium 3 requires insecure features to be scoped to a driver (or '*').
