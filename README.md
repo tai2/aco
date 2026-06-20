@@ -10,6 +10,33 @@ invocations -- no client-script scaffolding required.
 (`npm i -g appium`, `appium driver install xcuitest`, etc.). It spawns the
 `appium` binary from your `PATH`; it does not redistribute Appium itself.
 
+## Prerequisites
+
+`aco` drives a local Appium server, so you need Appium and at least one driver
+installed first. Follow the [Appium install guide](https://appium.io/docs/en/latest/quickstart/install/)
+for the authoritative steps; the essentials are:
+
+1. **Node.js and npm.** Appium needs Node.js in the SemVer range
+   `^20.19.0 || ^22.12.0 || >=24.0.0` (LTS recommended) and npm `>=10`. npm is
+   the only supported way to install Appium.
+2. **Appium.** Install it globally and confirm it resolves on your `PATH`:
+
+   ```sh
+   npm i -g appium
+   which appium
+   ```
+
+3. **At least one driver.** Appium ships no drivers, so it cannot automate
+   anything until you add one:
+
+   ```sh
+   appium driver install xcuitest      # iOS (requires Xcode + command line tools)
+   appium driver install uiautomator2  # Android (requires Android SDK + JDK)
+   ```
+
+   Each driver has its own platform toolchain requirements. Run
+   `appium driver doctor xcuitest` (or `uiautomator2`) to verify your setup.
+
 ## Install
 
 ```sh
