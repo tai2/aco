@@ -58,6 +58,43 @@ describe('element actions on /elements', () => {
     expect(elementText(id)).toBe('Static label');
   });
 
+  it('reports the static label as displayed', () => {
+    const r = acoOk([
+      'element',
+      'displayed',
+      '--element',
+      findId(TestIDs.elements.label),
+    ]);
+    expect(JSON.parse(r.stdout.trim())).toBe(true);
+  });
+
+  it('reports the button as enabled', () => {
+    const r = acoOk([
+      'element',
+      'enabled',
+      '--element',
+      findId(TestIDs.elements.button),
+    ]);
+    expect(JSON.parse(r.stdout.trim())).toBe(true);
+  });
+
+  it('returns a sane element rect for the label', () => {
+    const r = acoOk([
+      'element',
+      'rect',
+      '--element',
+      findId(TestIDs.elements.label),
+    ]);
+    const rect = JSON.parse(r.stdout.trim()) as {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    expect(rect.width).toBeGreaterThan(0);
+    expect(rect.height).toBeGreaterThan(0);
+  });
+
   it('find for a missing id errors cleanly', () => {
     const r = runAco([
       'element',

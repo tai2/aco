@@ -3,11 +3,18 @@ import { registerContext } from './commands/context/index.js';
 import { registerDevice } from './commands/device/index.js';
 import { registerElement } from './commands/element/index.js';
 import { registerMobile } from './commands/mobile/index.js';
+import { registerNav } from './commands/nav.js';
 import { registerScreenshot } from './commands/screenshot.js';
 import { registerSession } from './commands/session/index.js';
+import { registerSettings } from './commands/settings/index.js';
 import { registerSource } from './commands/source.js';
+import { registerStatus } from './commands/status.js';
 import { registerSwipe } from './commands/swipe.js';
 import { registerTap } from './commands/tap.js';
+import { registerTimeouts } from './commands/timeouts.js';
+import { registerUrl } from './commands/url.js';
+import { registerWait } from './commands/wait.js';
+import { registerWindow } from './commands/window.js';
 import { assertSupportedNodeVersion } from './lib/node-version.js';
 
 assertSupportedNodeVersion('20.0.0');
@@ -30,6 +37,13 @@ registerSwipe(program);
 registerContext(program);
 registerMobile(program);
 registerDevice(program);
+registerSettings(program);
+registerUrl(program);
+registerNav(program);
+registerTimeouts(program);
+registerWindow(program);
+registerStatus(program);
+registerWait(program);
 
 try {
   await program.parseAsync(process.argv);
