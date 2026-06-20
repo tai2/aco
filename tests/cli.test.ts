@@ -283,6 +283,22 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('chromedriver_autodownload');
   });
 
+  it('aco session start --help documents the new server flags', () => {
+    const result = runCli(['session', 'start', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--relaxed-security');
+    expect(result.stdout).toContain('--deny-insecure');
+    expect(result.stdout).toContain('--allow-cors');
+    expect(result.stdout).toContain('--base-path');
+    expect(result.stdout).toContain('--log-level');
+    expect(result.stdout).toContain('--use-plugins');
+    expect(result.stdout).toContain('--use-drivers');
+    expect(result.stdout).toContain('--address');
+    expect(result.stdout).toContain('--keep-alive-timeout');
+    expect(result.stdout).toContain('--request-timeout');
+    expect(result.stdout).toContain('--shutdown-timeout');
+  });
+
   // NOTE: `aco session start --detach` is not covered by automated tests in
   // this iteration. It would require a real `appium` binary on PATH (and an
   // AUT to connect to), which the rest of the suite also avoids. Manual smoke
@@ -687,6 +703,88 @@ describe('startAppiumServer cleanup', () => {
       if (childPid && isAlive(childPid)) {
         try {
           process.kill(childPid, 'SIGKILL');
+        } catch {
+          /* ignore */
+        }
+      }
+      process.env.PATH = savedPath;
+      process.env.HOME = savedHome;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Locks the lib-level CLI-flag -> appium argv translation without a real
+  // Appium: the fake records its own argv, then serves /status so
+  // waitForReady resolves and we can inspect what was forwarded.
+  it('forwards the new server flags into the spawned appium argv', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'aco-fakeappium-'));
+    const argvFile = join(dir, 'argv.json');
+    const fakeAppium = join(dir, 'appium');
+    writeFileSync(
+      fakeAppium,
+      [
+        '#!/usr/bin/env node',
+        'const http = require("node:http");',
+        'const fs = require("node:fs");',
+        `fs.writeFileSync(${JSON.stringify(argvFile)}, JSON.stringify(process.argv.slice(2)));`,
+        'const args = process.argv.slice(2);',
+        'const port = Number(args[args.indexOf("--port") + 1]);',
+        'const host = args[args.indexOf("--address") + 1];',
+        'const server = http.createServer((req, res) => {',
+        '  if (req.url === "/status") { res.writeHead(200); res.end("{}"); return; }',
+        '  res.writeHead(404); res.end();',
+        '});',
+        'server.listen(port, host);',
+        '',
+      ].join('\n'),
+      { mode: 0o755 },
+    );
+    chmodSync(fakeAppium, 0o755);
+
+    const port = 47998;
+    const savedPath = process.env.PATH;
+    const savedHome = process.env.HOME;
+    process.env.PATH = `${dir}:${savedPath ?? ''}`;
+    process.env.HOME = dir;
+    let pid: number | undefined;
+    try {
+      const server = await startAppiumServer({
+        port,
+        hostname: '0.0.0.0',
+        basePath: '/wd/hub',
+        logLevel: 'debug',
+        relaxedSecurity: true,
+        denyInsecure: ['adb_shell'],
+        allowCors: true,
+        useDrivers: ['xcuitest'],
+        usePlugins: ['images'],
+        keepAliveTimeout: 0,
+        requestTimeout: 7200,
+        shutdownTimeout: 1000,
+        readyTimeoutMs: 5000,
+      });
+      pid = server.pid;
+
+      const argv = JSON.parse(readFileSync(argvFile, 'utf8')) as string[];
+      const flagValue = (flag: string) => argv[argv.indexOf(flag) + 1];
+
+      expect(flagValue('--address')).toBe('0.0.0.0');
+      expect(flagValue('--base-path')).toBe('/wd/hub');
+      expect(flagValue('--log-level')).toBe('debug');
+      expect(argv).toContain('--relaxed-security');
+      expect(argv).toContain('--allow-cors');
+      expect(flagValue('--deny-insecure')).toBe('adb_shell');
+      expect(flagValue('--use-drivers')).toBe('xcuitest');
+      expect(flagValue('--use-plugins')).toBe('images');
+      // 0 is a meaningful value ("disable"); the gate is !== undefined, so it
+      // must survive rather than being dropped as falsy.
+      expect(flagValue('--keep-alive-timeout')).toBe('0');
+      expect(flagValue('--request-timeout')).toBe('7200');
+      expect(flagValue('--shutdown-timeout')).toBe('1000');
+    } finally {
+      if (pid && isAlive(pid)) {
+        try {
+          process.kill(pid, 'SIGKILL');
         } catch {
           /* ignore */
         }

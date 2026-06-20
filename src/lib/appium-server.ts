@@ -15,11 +15,38 @@ export interface StartedServer {
 
 export interface StartAppiumServerOptions {
   port: number;
+  // Interface to bind (Appium --address). Defaults to "127.0.0.1" — note this
+  // is deliberately narrower than Appium's own 0.0.0.0 default. Surfaced via
+  // the --address CLI flag.
   hostname?: string;
   tee?: boolean;
   // Appium "insecure features" to enable on the server (e.g.
   // `chromedriver_autodownload`). Forwarded verbatim as --allow-insecure.
   allowInsecure?: string[];
+  // Appium "insecure features" to disable. Only meaningful alongside
+  // --allow-insecure or --relaxed-security; applied last (deny wins).
+  denyInsecure?: string[];
+  // Open all insecure features (Appium --relaxed-security). Use only on a
+  // trusted local network; pair with --deny-insecure to claw features back.
+  relaxedSecurity?: boolean;
+  // Allow browser (CORS) connections to the server (Appium --allow-cors).
+  allowCors?: boolean;
+  // Server URL prefix for all WebDriver routes (Appium --base-path).
+  // Defaults to "/".
+  basePath?: string;
+  // Appium server log level, e.g. "debug" or "warn:debug" (console:file).
+  // Defaults to "info".
+  logLevel?: string;
+  // Drivers to activate (Appium --use-drivers). Default: all installed.
+  useDrivers?: string[];
+  // Plugins to activate (Appium --use-plugins). Default: none.
+  usePlugins?: string[];
+  // Appium --keep-alive-timeout, in seconds (0 disables). Default: Appium's 600.
+  keepAliveTimeout?: number;
+  // Appium --request-timeout, in seconds (0 disables). Default: Appium's 3600.
+  requestTimeout?: number;
+  // Appium --shutdown-timeout, in milliseconds. Default: Appium's 5000.
+  shutdownTimeout?: number;
   // How long to wait for the spawned server to start serving /status before
   // giving up (and tearing the child down). Defaults to 30s.
   readyTimeoutMs?: number;
@@ -29,7 +56,8 @@ export async function startAppiumServer(
   opts: StartAppiumServerOptions,
 ): Promise<StartedServer> {
   const hostname = opts.hostname ?? '127.0.0.1';
-  const basePath = '/';
+  const basePath = opts.basePath ?? '/';
+  const logLevel = opts.logLevel ?? 'info';
 
   mkdirSync(join(homedir(), '.aco', 'logs'), { recursive: true });
   const logFile = createWriteStream(
@@ -44,10 +72,34 @@ export async function startAppiumServer(
     '--base-path',
     basePath,
     '--log-level',
-    'info',
+    logLevel,
   ];
   if (opts.allowInsecure && opts.allowInsecure.length > 0) {
     args.push('--allow-insecure', opts.allowInsecure.join(','));
+  }
+  if (opts.denyInsecure && opts.denyInsecure.length > 0) {
+    args.push('--deny-insecure', opts.denyInsecure.join(','));
+  }
+  if (opts.relaxedSecurity) {
+    args.push('--relaxed-security');
+  }
+  if (opts.allowCors) {
+    args.push('--allow-cors');
+  }
+  if (opts.useDrivers && opts.useDrivers.length > 0) {
+    args.push('--use-drivers', opts.useDrivers.join(','));
+  }
+  if (opts.usePlugins && opts.usePlugins.length > 0) {
+    args.push('--use-plugins', opts.usePlugins.join(','));
+  }
+  if (opts.keepAliveTimeout !== undefined) {
+    args.push('--keep-alive-timeout', String(opts.keepAliveTimeout));
+  }
+  if (opts.requestTimeout !== undefined) {
+    args.push('--request-timeout', String(opts.requestTimeout));
+  }
+  if (opts.shutdownTimeout !== undefined) {
+    args.push('--shutdown-timeout', String(opts.shutdownTimeout));
   }
 
   const child = spawn('appium', args, {

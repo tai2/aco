@@ -52,7 +52,17 @@ aco session start --platform ios --app /tmp/MyApp.app --device-name "iPhone 15"
 
 # Android emulator
 aco session start --platform android --app com.example.app --app-activity .MainActivity --avd Pixel_8_API_34
+
+# Forward extra Appium server flags (debug logging, activate a plugin, etc.)
+aco session start --platform android --log-level debug --use-plugins images
 ```
+
+`session start` forwards a curated subset of Appium's server flags to the
+spawned sidecar -- `--base-path`, `--log-level`, `--address`, `--relaxed-security`,
+`--allow-cors`, `--allow-insecure` / `--deny-insecure`, `--use-drivers` /
+`--use-plugins`, and the `--keep-alive-timeout` / `--request-timeout` /
+`--shutdown-timeout` knobs. See `aco session start --help` for the full list and
+defaults.
 
 `session start` blocks on the TTY. Ctrl-C (or SIGTERM / SIGHUP) tears down the
 W3C session and stops the Appium child cleanly. Pass `--log` to also stream the
