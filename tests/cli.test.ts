@@ -503,6 +503,19 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('set');
   });
 
+  it('aco orientation --help documents get and set subcommands', () => {
+    const result = runCli(['orientation', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('get');
+    expect(result.stdout).toContain('set');
+  });
+
+  it('aco orientation set --help documents the <orientation> argument', () => {
+    const result = runCli(['orientation', 'set', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('orientation');
+  });
+
   it('aco wait --help documents the locator and polling flags', () => {
     const result = runCli(['wait', '--help']);
     expect(result.status).toBe(0);
