@@ -22,10 +22,12 @@ describe('smoke: session lifecycle + snapshot/discovery commands', () => {
     expect(ours?.alive).not.toBe(false);
   });
 
-  it('mobile list --versions reports the pinned driver(s) for this platform', () => {
-    const r = runAco(['mobile', 'list', '--platform', PLATFORM, '--versions']);
+  it('mobile list reports extensions the connected driver advertises', () => {
+    const r = runAco(['mobile', 'list']);
     expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/@\d+\.\d+\.\d+ \(\d+ entries\)/);
+    // The live endpoint lists at least the terminateApp extension on both
+    // drivers; the exact set tracks the connected driver version.
+    expect(r.stdout).toMatch(/terminateApp/);
   });
 
   it('device list returns a devices array for this platform', () => {

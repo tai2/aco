@@ -27,6 +27,22 @@ export function resetApp(): void {
     '--args',
     JSON.stringify(args),
   ]);
+  // activateApp returns as soon as the activity is foregrounded, before React
+  // Native paints its tree -- on Android `source`/`find` right after sees the
+  // bare native shell and the testIDs are absent (a flaky render race). Block
+  // until the Home title is actually displayed so callers land on a rendered
+  // Home every time.
+  acoOk([
+    'wait',
+    '--using',
+    'accessibility id',
+    '--value',
+    TestIDs.home.title,
+    '--for',
+    'displayed',
+    '--timeout',
+    '30000',
+  ]);
 }
 
 // Tap a Home <Link> to navigate into its screen.

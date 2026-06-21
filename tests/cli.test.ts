@@ -64,78 +64,47 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('--release-only');
   });
 
-  it('lists mobile: extensions for ios from the bundled snapshot', () => {
-    const result = runCli(['mobile', 'list', '--platform', 'ios', '--json']);
+  it('aco ios --help lists generated extensions as first-class commands', () => {
+    const result = runCli(['ios', '--help']);
     expect(result.status).toBe(0);
-    const map = JSON.parse(result.stdout) as Record<
-      string,
-      { command: string }
-    >;
-    expect(map['mobile: tap']).toBeDefined();
-    expect(map['mobile: tap']?.command).toBe('mobileTap');
+    // snake-cased leaves derived from the pinned XCUITest manifest
+    expect(result.stdout).toContain('tap');
+    expect(result.stdout).toContain('double-tap');
+    expect(result.stdout).toContain('select-picker-wheel-value');
+    expect(result.stdout).toMatch(/pinned driver source/);
   });
 
-  it('lists mobile: extensions for android (includes inherited android-driver entries)', () => {
-    const result = runCli([
-      'mobile',
-      'list',
-      '--platform',
-      'android',
-      '--json',
-    ]);
+  it('aco android --help lists generated extensions as first-class commands', () => {
+    const result = runCli(['android', '--help']);
     expect(result.status).toBe(0);
-    const map = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(map['mobile: clickGesture']).toBeDefined();
-    expect(map['mobile: shell']).toBeDefined();
+    expect(result.stdout).toContain('shell');
+    expect(result.stdout).toContain('click-gesture');
+    expect(result.stdout).toContain('drag-gesture');
   });
 
-  it('shows the pinned driver versions the iOS snapshot was generated from', () => {
-    const result = runCli([
-      'mobile',
-      'list',
-      '--platform',
-      'ios',
-      '--versions',
-    ]);
+  it('aco ios tap --help shows source-derived typed param help', () => {
+    const result = runCli(['ios', 'tap', '--help']);
     expect(result.status).toBe(0);
-    expect(result.stdout).toMatch(
-      /^appium-xcuitest-driver@\d+\.\d+\.\d+ \(\d+ entries\)\n$/,
-    );
+    expect(result.stdout).toMatch(/--x <value>.*\(number\)/s);
+    expect(result.stdout).toMatch(/--y <value>.*\(number\)/s);
+    expect(result.stdout).toMatch(/--elementId <value>.*\(string\)/s);
+    // connection flags still sort last
+    expect(result.stdout).toContain('--session');
   });
 
-  it('shows both uiautomator2 and android-driver versions for the android snapshot', () => {
-    const result = runCli([
-      'mobile',
-      'list',
-      '--platform',
-      'android',
-      '--versions',
-    ]);
+  it('aco mobile call --help documents it as an unvalidated escape hatch', () => {
+    const result = runCli(['mobile', 'call', '--help']);
     expect(result.status).toBe(0);
-    expect(result.stdout).toMatch(/appium-uiautomator2-driver@\d+\.\d+\.\d+/);
-    expect(result.stdout).toMatch(/appium-android-driver@\d+\.\d+\.\d+/);
+    expect(result.stdout).toContain('unvalidated');
+    expect(result.stdout).toContain('--name');
+    expect(result.stdout).toContain('--args');
   });
 
-  it('emits the full snapshot envelope when --versions is combined with --json', () => {
-    const result = runCli([
-      'mobile',
-      'list',
-      '--platform',
-      'ios',
-      '--versions',
-      '--json',
-    ]);
+  it('aco mobile list --help mentions the live extensions endpoint', () => {
+    const result = runCli(['mobile', 'list', '--help']);
     expect(result.status).toBe(0);
-    const snapshot = JSON.parse(result.stdout) as {
-      drivers: { package: string; version: string }[];
-      methods: Record<string, unknown>;
-    };
-    expect(Array.isArray(snapshot.drivers)).toBe(true);
-    expect(snapshot.drivers[0]).toMatchObject({
-      package: 'appium-xcuitest-driver',
-    });
-    expect(typeof snapshot.drivers[0]?.version).toBe('string');
-    expect(snapshot.methods['mobile: tap']).toBeDefined();
+    expect(result.stdout).toContain('/session/:id/appium/extensions');
+    expect(result.stdout).toContain('--json');
   });
 
   it('rejects a subcommand invocation when no flags and no stored session exist', () => {

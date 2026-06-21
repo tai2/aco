@@ -1,52 +1,43 @@
 import type { Command } from '@commander-js/extra-typings';
-import { loadSnapshot } from '../../lib/method-map.js';
+import { addConnectionFlags, resolveConnection } from '../../lib/connection.js';
 
 export function registerMobileList(mobile: Command): void {
-  mobile
-    .command('list')
-    .description('list mobile: extensions advertised by the pinned driver')
-    .requiredOption(
-      '-p, --platform <ios|android>',
-      'platform whose driver map to render',
-    )
-    .option('--json', 'emit JSON instead of human-readable')
-    .option(
-      '--versions',
-      'show the driver package(s) + version(s) the bundled snapshot was generated from',
-    )
+  addConnectionFlags(
+    mobile
+      .command('list')
+      .description(
+        'list mobile: extensions the connected driver advertises ' +
+          '(GET /session/:id/appium/extensions)',
+      ),
+  )
+    .option('--json', 'emit the raw endpoint payload as JSON')
     .action(async (opts) => {
-      const platform = opts.platform.toLowerCase();
-      if (platform !== 'ios' && platform !== 'android') {
+      const { conn } = resolveConnection(opts);
+      const base =
+        conn.basePath === '/' ? '' : conn.basePath.replace(/\/$/, '');
+      const url =
+        `${conn.protocol}://${conn.hostname}:${conn.port}` +
+        `${base}/session/${conn.sessionId}/appium/extensions`;
+
+      const res = await fetch(url);
+      if (!res.ok) {
         throw new Error(
-          `--platform must be "ios" or "android" (got "${opts.platform}")`,
+          `listExtensions failed: ${res.status} ${res.statusText}`,
         );
       }
-      const snapshot = loadSnapshot(platform);
-
-      if (opts.versions) {
-        if (opts.json) {
-          process.stdout.write(`${JSON.stringify(snapshot, null, 2)}\n`);
-          return;
-        }
-        const entryCount = Object.keys(snapshot.methods).length;
-        for (const d of snapshot.drivers) {
-          process.stdout.write(
-            `${d.package}@${d.version} (${entryCount} entries)\n`,
-          );
-        }
-        return;
-      }
+      const body = (await res.json()) as {
+        value?: { rest?: { driver?: Record<string, unknown> } };
+      };
+      const driver = body.value?.rest?.driver ?? {};
 
       if (opts.json) {
-        process.stdout.write(`${JSON.stringify(snapshot.methods, null, 2)}\n`);
+        process.stdout.write(
+          `${JSON.stringify(body.value ?? body, null, 2)}\n`,
+        );
         return;
       }
-      for (const [name, spec] of Object.entries(snapshot.methods)) {
-        const req = spec.params?.required?.join(',') ?? '';
-        const opt = spec.params?.optional?.join(',') ?? '';
-        process.stdout.write(
-          `${name.padEnd(40)} required:[${req}] optional:[${opt}]\n`,
-        );
+      for (const name of Object.keys(driver)) {
+        process.stdout.write(`${name}\n`);
       }
     });
 }

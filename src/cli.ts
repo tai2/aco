@@ -6,6 +6,10 @@ import { registerElement } from './commands/element/index.js';
 import { registerMobile } from './commands/mobile/index.js';
 import { registerNav } from './commands/nav.js';
 import { registerOrientation } from './commands/orientation.js';
+import {
+  registerAndroid,
+  registerIos,
+} from './commands/platform-extensions.js';
 import { registerScreenshot } from './commands/screenshot.js';
 import { registerScrollIntoView } from './commands/scroll-into-view.js';
 import { registerSession } from './commands/session/index.js';
@@ -41,6 +45,8 @@ registerScrollIntoView(program);
 registerActions(program);
 registerContext(program);
 registerMobile(program);
+registerIos(program);
+registerAndroid(program);
 registerDevice(program);
 registerSettings(program);
 registerUrl(program);

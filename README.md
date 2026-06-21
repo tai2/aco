@@ -173,11 +173,46 @@ edge to avoid it.
 
 ### 3. Inspect / call any `mobile:` extension
 
+Every `mobile:` extension the pinned drivers advertise is a **first-class
+command** under a platform namespace, generated from the driver source:
+
 ```sh
-aco mobile list --platform ios
-aco mobile list --platform ios --versions    # show the pinned driver versions
+aco ios --help                 # all XCUITest mobile: extensions as commands
+aco android --help             # all UiAutomator2 / Android-driver extensions
+aco ios swipe --direction up   # mobile: swipe (mobileSwipe)
+aco ios scroll --toVisible true --distance 0.5
+aco android shell --command "getprop ro.product.model"
+```
+
+Each command's flags map 1:1 to the driver's params, and the value is coerced
+to the type the driver source declares (`--distance 0.5` → number, `--toVisible
+true` → boolean, element ids / strings forwarded verbatim). Run `aco ios <cmd>
+--help` to see each param's type. Subcommand leaves are snake-cased from the
+`mobile:` name (`mobile: doubleTap` → `aco ios double-tap`); the `--<param>`
+flags keep the driver's camelCase names.
+
+`aco mobile list` queries the **connected** server for what the live driver
+actually advertises (via `GET /session/:id/appium/extensions`) — so it reflects
+the running driver version, not the pinned manifest:
+
+```sh
+aco mobile list          # names the connected driver advertises
+aco mobile list --json   # raw endpoint payload
+```
+
+`aco mobile call` is the **unvalidated escape hatch** — it forwards the name and
+JSON args verbatim, with no local schema check (the server validates). Prefer
+the generated `aco ios`/`aco android` commands; reach for `call` for a method the
+live server has but the pinned manifest does not:
+
+```sh
 aco mobile call --name "mobile: swipe" --args '{"direction":"up"}'
 ```
+
+`aco tap` / `aco swipe` stay as ergonomic **cross-platform** shims (one command
+picks the right `mobile:` name by the live session's platform, and they supply
+defaults). The generated `aco ios`/`aco android` commands are the exhaustive,
+one-platform-per-namespace low-level surface.
 
 ### 4. Inspect / stop stored sessions
 
@@ -201,10 +236,10 @@ Appium child pid, and unlinks the record.
   `--cap appium:allowInsecure='["adb_shell"]'`.
 - **`appium not found on PATH`** when running `aco session start`: install
   Appium first (`npm i -g appium`) and verify `which appium` resolves.
-- **`unknown command (script)`** from `aco mobile call`: the connected Appium
-  server runs a driver version that does not expose that `mobile:` extension.
-  Compare `aco mobile list --platform <p> --versions` against the server's
-  driver version.
+- **`unknown command (script)`** from `aco mobile call` or a generated
+  `aco ios`/`aco android` command: the connected Appium server runs a driver
+  version that does not expose that `mobile:` extension. Run `aco mobile list`
+  to see what the connected driver actually advertises.
 
 ## Development
 
@@ -216,7 +251,7 @@ pnpm dev --help                 # one-shot run via tsx
 pnpm dev:watch --help           # same, but rerun on file changes
 pnpm typecheck                  # tsc --noEmit
 pnpm test                       # vitest run
-pnpm gen:method-map             # regenerate src/data/method-map-*.json
+pnpm gen:extensions             # regenerate src/data/extensions-*.json from driver source
 pnpm build                      # produce dist/cli.js via tsup
 ```
 
