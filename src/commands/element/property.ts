@@ -6,7 +6,9 @@ export function registerElementProperty(element: Command): void {
   addConnectionFlags(
     element
       .command('property')
-      .description('read an element property (GET /element/:id/property/:name)'),
+      .description(
+        'read an element property (GET /element/:id/property/:name)',
+      ),
   )
     .requiredOption('-e, --element <id>', 'element id')
     .requiredOption('-n, --name <prop>', 'property name')
