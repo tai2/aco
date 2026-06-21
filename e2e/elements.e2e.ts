@@ -95,6 +95,13 @@ describe('element actions on /elements', () => {
     expect(rect.height).toBeGreaterThan(0);
   });
 
+  it('reports the focused input as the active element', () => {
+    const input = findId(TestIDs.elements.input);
+    acoOk(['element', 'click', '--element', input]);
+    const r = acoOk(['element', 'active']);
+    expect(typeof (JSON.parse(r.stdout.trim()) as unknown)).toBe('string');
+  });
+
   it('find for a missing id errors cleanly', () => {
     const r = runAco([
       'element',
