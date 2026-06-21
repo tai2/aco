@@ -5,7 +5,6 @@ import { registerDevice } from './commands/device/index.js';
 import { registerElement } from './commands/element/index.js';
 import { registerElements } from './commands/elements.js';
 import { registerMobile } from './commands/mobile/index.js';
-import { registerNav } from './commands/nav.js';
 import { registerOrientation } from './commands/orientation.js';
 import {
   registerAndroid,
@@ -21,8 +20,8 @@ import { registerStatus } from './commands/status.js';
 import { registerSwipe } from './commands/swipe.js';
 import { registerTap } from './commands/tap.js';
 import { registerTimeouts } from './commands/timeouts.js';
-import { registerUrl } from './commands/url.js';
 import { registerWait } from './commands/wait.js';
+import { registerWeb } from './commands/web.js';
 import { registerWindow } from './commands/window.js';
 import { assertSupportedNodeVersion } from './lib/node-version.js';
 
@@ -53,8 +52,7 @@ registerIos(program);
 registerAndroid(program);
 registerDevice(program);
 registerSettings(program);
-registerUrl(program);
-registerNav(program);
+registerWeb(program);
 registerOrientation(program);
 registerTimeouts(program);
 registerWindow(program);
