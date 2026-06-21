@@ -151,59 +151,6 @@ aco source     --session <sid> --platform ios
 aco source     --session <sid> --server-url http://10.0.0.5:4799 --platform ios
 ```
 
-`aco source --xpath <expr>` evaluates the expression **client-side in Node.js**
-against the XML that `GET /source` returns -- distinct from `aco element find
---using xpath`, which sends the expression to the driver to evaluate against its
-internal element tree. Because it runs over the serialized page source, it can
-extract node fragments, attribute values, and `count()`/`string()` results that
-`find` (element-ids only) cannot. Node-set matches print as XML fragments
-(newline-joined); `count()`/`string()`/boolean results print as plain text. The
-XML schema is platform-specific (iOS exposes `name`/`label`, Android exposes
-`content-desc`/`text` -- see `e2e/helpers/platform.ts`), so XPath expressions are
-platform-coupled, the same as the server-side path.
-
-`aco actions` is the **cross-platform W3C Actions path** (`POST /actions`): one
-code path on both drivers, no `mobile:` extension or `--platform` shim. Each
-`--gesture` is one comma-separated pointer chain (`move <x> <y> [ms]`, `down`,
-`up`, `pause <ms>`, `cancel`); repeat `--gesture` for parallel multi-touch
-chains. `--type <text>` appends a key source that types the text into the
-focused field (focus it first with a `--gesture` tap or `aco tap`). `pointerType`
-defaults to `touch` for the ergonomic form (overridable with `--pointer-type`);
-the `--json` escape hatch passes a raw W3C actions array straight through,
-untouched. `aco tap`/`aco swipe` are higher-level ergonomic forms over the same
-W3C pointer layer (`aco swipe` wraps WebdriverIO's cross-platform `swipe`; name
-the element to swipe within with `--selector`/`--label`/`--element`, or pass raw
-`--from <x,y>`/`--to <x,y>` coordinates). Because `aco swipe` is a real pointer
-drag, the same Android gesture-nav caveat as `scroll-into-view` applies: on a
-full-height scroll container the default `--percent 0.95` starts the drag inside
-the bottom gesture zone (backgrounding the app); pass a smaller `--percent`
-(e.g. `0.5`). Gestures release held input state by default; `--no-release` holds it across
-calls and `--release-only` issues the standalone cleanup.
-
-`aco send-keys` is the ergonomic, selector-driven typing command (`POST
-/element/:id/value`): name the target with `--selector`, `--label`, or a raw
-`--element` id. It **clears the field first by default** (`POST
-/element/:id/clear`) so it *replaces* the contents; pass `--no-clear` to append
-instead. It sits above the raw `aco element send-keys` primitive (id-only,
-append-only) the same way top-level `aco tap` sits above `aco element click`.
-`aco element property` reads a W3C element *property* (`GET
-/element/:id/property/:name`), the live DOM/accessibility value that WebDriver
-distinguishes from the static `aco element attribute`.
-
-`aco scroll-into-view` wraps WebdriverIO's `element.scrollIntoView` intact --
-its **positional WDIO selector string** (e.g.
-`"accessibility id:gestures.row.29"`) names the element to *bring on screen*,
-which WDIO re-resolves as it swipes until that element is displayed. (Contrast
-`aco swipe`, whose `--selector`/`--label`/`--element` name the element to swipe
-*within*.) It defaults
-to `direction up` and `maxScrolls 10` and uses the platform default scroll
-container unless `--scrollable <selector>` is given. It targets the **native**
-context. On Android with gesture navigation, a full-height scroll container can
-make the default `--percent 0.95` swipe start inside the system gesture zone at
-the screen edge (backgrounding the app instead of scrolling); pass a smaller
-`--percent` (e.g. `0.5`) or a `--scrollable <selector>` that doesn't reach the
-edge to avoid it.
-
 ### 3. Inspect / call any `mobile:` extension
 
 Every `mobile:` extension the pinned drivers advertise is a **first-class
