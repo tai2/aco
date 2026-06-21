@@ -74,7 +74,8 @@ describe('gestures: tap + swipe on /gestures', () => {
     // bottom gesture-nav zone, which backgrounds the app instead of scrolling.
     const r = acoOk([
       'scroll-into-view',
-      `accessibility id:${TestIDs.gestures.row(29)}`,
+      '--label',
+      TestIDs.gestures.row(29),
       '--direction',
       'up',
       '--percent',
@@ -83,6 +84,7 @@ describe('gestures: tap + swipe on /gestures', () => {
     expect(r.stdout.trim()).toBe('ok');
     // On success WDIO confirms the row is displayed (either it scrolled to it or
     // it was already on screen). This exercises the real scroll-until-visible
-    // loop end-to-end against the live driver.
+    // loop end-to-end against the live driver. --label resolves to
+    // "accessibility id:<row>", parity with the targeting form aco tap/swipe use.
   });
 });

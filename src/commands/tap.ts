@@ -2,6 +2,11 @@ import type { Command } from '@commander-js/extra-typings';
 import { buildTap } from '../lib/actions.js';
 import { addConnectionFlags } from '../lib/connection.js';
 import { runWithSession } from '../lib/run-with-session.js';
+import {
+  addTargetFlags,
+  countTargetSources,
+  resolveTargetElementId,
+} from '../lib/target.js';
 
 function finiteNumber(flag: string, v: string): number {
   const n = Number(v);
@@ -12,24 +17,18 @@ function finiteNumber(flag: string, v: string): number {
 }
 
 export function registerTap(program: Command): void {
-  addConnectionFlags(
-    program
-      .command('tap')
-      .description(
-        'tap the center of an element (or absolute coords) with a real ' +
-          'W3C pointer gesture (POST /actions), so the touch bubbles up the ' +
-          'native view hierarchy',
-      ),
+  addTargetFlags(
+    addConnectionFlags(
+      program
+        .command('tap')
+        .description(
+          'tap the center of an element (or absolute coords) with a real ' +
+            'W3C pointer gesture (POST /actions), so the touch bubbles up the ' +
+            'native view hierarchy',
+        ),
+    ),
+    'target',
   )
-    .option(
-      '--selector <wdio-selector>',
-      'WDIO selector for the target, e.g. "accessibility id:foo", "xpath://..."',
-    )
-    .option(
-      '-l, --label <text>',
-      'accessibility id (label) of the target; taps the first match',
-    )
-    .option('-e, --element <id>', 'raw element id of the target')
     .option(
       '-x, --x <px>',
       'x coordinate (absolute, or offset within element)',
@@ -46,13 +45,11 @@ export function registerTap(program: Command): void {
       (v) => finiteNumber('--duration', v),
     )
     .action(async (opts) => {
-      const sources = [opts.selector, opts.label, opts.element].filter(
-        (s) => s != null,
-      );
-      if (sources.length > 1) {
+      const sourceCount = countTargetSources(opts);
+      if (sourceCount > 1) {
         throw new Error('pass at most one of --selector, --label, --element');
       }
-      const hasElementSource = sources.length === 1;
+      const hasElementSource = sourceCount === 1;
       const hasCoords = opts.x != null && opts.y != null;
 
       if (!hasElementSource && !hasCoords) {
@@ -66,20 +63,7 @@ export function registerTap(program: Command): void {
         let y: number;
 
         if (hasElementSource) {
-          let elementId: string;
-          if (opts.element != null) {
-            elementId = opts.element;
-          } else {
-            const selector =
-              opts.label != null
-                ? `accessibility id:${opts.label}`
-                : (opts.selector as string);
-            const el = await b.$(selector);
-            elementId = await el.elementId;
-            if (!elementId) {
-              throw new Error(`no element matched ${selector}`);
-            }
-          }
+          const elementId = await resolveTargetElementId(b, opts);
           const rect = await b.getElementRect(elementId);
           // --x/--y act as an offset from the element's top-left when an
           // element is given; otherwise tap its geometric center.

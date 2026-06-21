@@ -137,7 +137,7 @@ aco swipe      --direction up                                 # within the defau
 aco swipe      --direction left --label home.carousel         # within a labelled element
 aco send-keys  --selector 'accessibility id:login.username' --text 'alice'   # clears, then types
 aco send-keys  --label login.username --text '!' --no-clear                  # append instead
-aco scroll-into-view "accessibility id:gestures.row.29" --direction up   # swipe until visible
+aco scroll-into-view --label gestures.row.29 --direction up              # swipe until visible
 aco actions    --gesture "move 200 600 0, down, move 200 200 300, up"   # raw W3C pointer
 aco actions    --type "hello"                                          # raw W3C key (typing)
 aco actions    --gesture "move 200 600 0, down" --no-release           # hold across calls
@@ -191,17 +191,16 @@ append-only) the same way top-level `aco tap` sits above `aco element click`.
 distinguishes from the static `aco element attribute`.
 
 `aco scroll-into-view` wraps WebdriverIO's `element.scrollIntoView` intact --
-its **positional WDIO selector string** (e.g.
-`"accessibility id:gestures.row.29"`) names the element to *bring on screen*,
+name the element to *bring on screen* with `--selector`/`--label`/`--element`
+(the same targeting trio as `aco tap`/`aco swipe`; exactly one is required),
 which WDIO re-resolves as it swipes until that element is displayed. (Contrast
-`aco swipe`, whose `--selector`/`--label`/`--element` name the element to swipe
-*within*.) It defaults
+`aco swipe`, whose trio names the element to swipe *within*.) It defaults
 to `direction up` and `maxScrolls 10` and uses the platform default scroll
 container unless `--scrollable <selector>` is given. It targets the **native**
 context. On Android with gesture navigation, a full-height scroll container can
 make the default `--percent 0.95` swipe start inside the system gesture zone at
 the screen edge (backgrounding the app instead of scrolling); pass a smaller
-`--percent` (e.g. `0.5`) or a `--scrollable <selector>` that doesn't reach the
+`--percent` (e.g. `0.5`) or a `--scrollable` container that doesn't reach the
 edge to avoid it.
 
 ### 3. Inspect / call any `mobile:` extension

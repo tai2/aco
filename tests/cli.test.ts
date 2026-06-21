@@ -125,6 +125,63 @@ describe('aco CLI', () => {
     expect(result.stderr).toContain('--direction must be up|down|left|right');
   });
 
+  it('aco scroll-into-view --help surfaces the targeting and scroll flags', () => {
+    const result = runCli(['scroll-into-view', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--selector');
+    expect(result.stdout).toContain('--label');
+    expect(result.stdout).toContain('--element');
+    expect(result.stdout).toContain('--direction');
+    expect(result.stdout).toContain('--max-scrolls');
+    expect(result.stdout).toContain('--duration');
+    expect(result.stdout).toContain('--percent');
+    expect(result.stdout).toContain('--scrollable');
+  });
+
+  it('aco scroll-into-view requires exactly one target source', () => {
+    const noTarget = runCli(['scroll-into-view', '--direction', 'up']);
+    expect(noTarget.status).toBe(1);
+    expect(noTarget.stderr).toContain(
+      'pass exactly one of --selector, --label, --element',
+    );
+
+    const tooMany = runCli([
+      'scroll-into-view',
+      '--label',
+      'a',
+      '--element',
+      'b',
+    ]);
+    expect(tooMany.status).toBe(1);
+    expect(tooMany.stderr).toContain(
+      'pass exactly one of --selector, --label, --element',
+    );
+  });
+
+  it('aco scroll-into-view rejects an invalid --direction', () => {
+    const result = runCli([
+      'scroll-into-view',
+      '--label',
+      'a',
+      '--direction',
+      'sideways',
+    ]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--direction must be up|down|left|right');
+  });
+
+  it('aco scroll-into-view rejects a non-integer --max-scrolls', () => {
+    const result = runCli([
+      'scroll-into-view',
+      '--label',
+      'a',
+      '--max-scrolls',
+      '1.5',
+    ]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--max-scrolls must be an integer');
+  });
+
   it('aco element property --help documents --element and --name', () => {
     const result = runCli(['element', 'property', '--help']);
     expect(result.status).toBe(0);
