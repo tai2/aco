@@ -1,20 +1,20 @@
-import type { Command } from "@commander-js/extra-typings";
-import { addConnectionFlags } from "../../lib/connection.js";
-import { STRATEGIES, unwrapElementId } from "../../lib/locator.js";
-import { runWithSession } from "../../lib/run-with-session.js";
+import type { Command } from '@commander-js/extra-typings';
+import { addConnectionFlags } from '../../lib/connection.js';
+import { STRATEGIES, unwrapElementId } from '../../lib/locator.js';
+import { runWithSession } from '../../lib/run-with-session.js';
 
 export function registerElementFind(element: Command): void {
   addConnectionFlags(
     element
-      .command("find")
-      .description("find a single element (POST /element)"),
+      .command('find')
+      .description('find a single element (POST /element)'),
   )
     .requiredOption(
-      "-u, --using <strategy>",
-      `locator strategy (${STRATEGIES.join(", ")})`,
+      '-u, --using <strategy>',
+      `locator strategy (${STRATEGIES.join(', ')})`,
     )
-    .requiredOption("-v, --value <value>", "locator value")
-    .option("--all", "find all matching elements (POST /elements)")
+    .requiredOption('-v, --value <value>', 'locator value')
+    .option('--all', 'find all matching elements (POST /elements)')
     .action(async (opts) => {
       const result = await runWithSession(opts, async (b) => {
         if (opts.all) {
