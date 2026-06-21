@@ -39,9 +39,11 @@ useful when you add a new one:
 
 1. **W3C WebDriver commands** -- the cross-platform protocol baseline:
    `GET /source`, `GET /screenshot`, `POST /element`, `POST /element/:id/click`,
-   `GET/POST /context`, etc. These work on _any_ driver. `aco source`,
-   `aco screenshot`, `aco element ...`, and `aco context ...` are wrappers over
-   this layer.
+   `GET/POST /context`, `POST /actions`, etc. These work on _any_ driver.
+   `aco source`, `aco screenshot`, `aco element ...`, `aco context ...`,
+   `aco actions`, and `aco tap` are wrappers over this layer. (`aco tap` issues
+   a real W3C pointer gesture via `POST /actions` so the touch bubbles up the
+   native view hierarchy, rather than dispatching a `mobile:` extension.)
 2. **Legacy Appium endpoints** under `/session/:id/appium/...` (e.g.
    `/appium/device/lock`). Almost all of these have been superseded by the
    modern `mobile:` extensions below and we intentionally do **not** wrap them
@@ -53,9 +55,10 @@ useful when you add a new one:
    and their `{ required, optional }` parameters is defined by each driver in
    its `build/lib/execute-method-map.js` export. **Every** such extension is a
    generated first-class command under `aco ios <name>` / `aco android <name>`
-   (see "How we stay in sync with Appium"); `aco tap` / `aco swipe` are
-   hand-written cross-platform shims over the same layer; and `aco mobile call`
-   is the generic unvalidated escape hatch.
+   (see "How we stay in sync with Appium"); `aco swipe` is a hand-written
+   cross-platform shim over the same layer; and `aco mobile call` is the
+   generic unvalidated escape hatch. (`aco tap` used to be such a shim but is
+   now a W3C `POST /actions` wrapper -- see family 1 above.)
 
 **Device discovery.** `aco device list` enumerates iOS Simulators (via
 `xcrun simctl list -j devices`) and Android AVDs (via the
@@ -101,9 +104,11 @@ command, mapping each param to a `--<param>` flag that coerces by `kind`. The
 runtime CLI never touches the driver packages.
 
 Promotion is **generated** — there is no hand-written file per extension. The
-only hand-written `mobile:` shims are the cross-platform ergonomic ones
-(`aco tap` / `aco swipe`), which pick the platform-correct `mobile:` name from
-the live session's platform and supply defaults. When adding a new such shim:
+only hand-written `mobile:` shim is the cross-platform ergonomic `aco swipe`,
+which picks the platform-correct `mobile:` name from the live session's
+platform and supplies defaults. (`aco tap` is no longer a `mobile:` shim — it
+is a W3C `POST /actions` pointer tap and reads no platform.) When adding a new
+such shim:
 
 1. Find the corresponding `mobile: ...` entries in both committed manifests
    under `src/data/` (or the driver maps).
