@@ -64,6 +64,27 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('--release-only');
   });
 
+  it('aco send-keys --help surfaces the selector, text, and --no-clear flags', () => {
+    const result = runCli(['send-keys', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--selector');
+    expect(result.stdout).toContain('--text');
+    expect(result.stdout).toContain('--no-clear');
+  });
+
+  it('top-level --help lists the send-keys command', () => {
+    const result = runCli(['--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('send-keys');
+  });
+
+  it('aco element property --help documents --element and --name', () => {
+    const result = runCli(['element', 'property', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--element');
+    expect(result.stdout).toContain('--name');
+  });
+
   it('aco ios --help lists generated extensions as first-class commands', () => {
     const result = runCli(['ios', '--help']);
     expect(result.status).toBe(0);

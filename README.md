@@ -134,6 +134,8 @@ aco elements                                                  # labelled element
 aco screenshot --out ./shot.png
 aco tap        --x 100 --y 200
 aco swipe      --direction up
+aco send-keys  --selector 'accessibility id:login.username' --text 'alice'   # clears, then types
+aco send-keys  --label login.username --text '!' --no-clear                  # append instead
 aco scroll-into-view "accessibility id:gestures.row.29" --direction up   # swipe until visible
 aco actions    --gesture "move 200 600 0, down, move 200 200 300, up"   # raw W3C pointer
 aco actions    --type "hello"                                          # raw W3C key (typing)
@@ -170,6 +172,16 @@ the `--json` escape hatch passes a raw W3C actions array straight through,
 untouched. By contrast, `aco tap`/`aco swipe` ride the driver-specific `mobile:`
 extension layer. Gestures release held input state by default; `--no-release`
 holds it across calls and `--release-only` issues the standalone cleanup.
+
+`aco send-keys` is the ergonomic, selector-driven typing command (`POST
+/element/:id/value`): name the target with `--selector`, `--label`, or a raw
+`--element` id. It **clears the field first by default** (`POST
+/element/:id/clear`) so it *replaces* the contents; pass `--no-clear` to append
+instead. It sits above the raw `aco element send-keys` primitive (id-only,
+append-only) the same way top-level `aco tap` sits above `aco element click`.
+`aco element property` reads a W3C element *property* (`GET
+/element/:id/property/:name`), the live DOM/accessibility value that WebDriver
+distinguishes from the static `aco element attribute`.
 
 `aco scroll-into-view` wraps WebdriverIO's `element.scrollIntoView` intact --
 unlike `tap`/`swipe` it takes a **WDIO selector string** (e.g.

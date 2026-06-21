@@ -5,6 +5,7 @@ import { registerElementClick } from './click.js';
 import { registerElementDisplayed } from './displayed.js';
 import { registerElementEnabled } from './enabled.js';
 import { registerElementFind } from './find.js';
+import { registerElementProperty } from './property.js';
 import { registerElementRect } from './rect.js';
 import { registerElementSelected } from './selected.js';
 import { registerElementSendKeys } from './send-keys.js';
@@ -19,6 +20,7 @@ export function registerElement(program: Command): void {
   registerElementText(element);
   registerElementSendKeys(element);
   registerElementAttribute(element);
+  registerElementProperty(element);
   registerElementDisplayed(element);
   registerElementEnabled(element);
   registerElementSelected(element);

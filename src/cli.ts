@@ -13,6 +13,7 @@ import {
 } from './commands/platform-extensions.js';
 import { registerScreenshot } from './commands/screenshot.js';
 import { registerScrollIntoView } from './commands/scroll-into-view.js';
+import { registerSendKeys } from './commands/send-keys.js';
 import { registerSession } from './commands/session/index.js';
 import { registerSettings } from './commands/settings/index.js';
 import { registerSource } from './commands/source.js';
@@ -43,6 +44,7 @@ registerElements(program);
 registerScreenshot(program);
 registerTap(program);
 registerSwipe(program);
+registerSendKeys(program);
 registerScrollIntoView(program);
 registerActions(program);
 registerContext(program);
