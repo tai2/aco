@@ -565,11 +565,20 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('GET /element/active');
   });
 
-  it('aco url --help documents the optional [url] argument', () => {
-    const result = runCli(['url', '--help']);
+  it('aco web url --help documents the optional [url] argument', () => {
+    const result = runCli(['web', 'url', '--help']);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('url');
     expect(result.stdout).toContain('[url]');
+  });
+
+  it('aco web --help lists the web navigation subcommands', () => {
+    const result = runCli(['web', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('url');
+    expect(result.stdout).toContain('back');
+    expect(result.stdout).toContain('forward');
+    expect(result.stdout).toContain('refresh');
   });
 
   it('aco timeouts --help documents get and set subcommands', () => {

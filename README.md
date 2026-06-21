@@ -90,6 +90,8 @@ aco actions    --type "hello"                                                # r
 aco element find  --using "accessibility id" --value "Login"
 aco element click --element <element-id>
 aco context list
+aco context switch --name WEBVIEW_com.example   # enter the web context, then:
+aco web url https://example.com                 # navigate the active WebView
 
 # Explicit targeting (remote/grid):
 aco source --session <sid> --server-url http://10.0.0.5:4799 --platform ios
