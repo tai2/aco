@@ -3,6 +3,7 @@ import { registerActions } from './commands/actions.js';
 import { registerContext } from './commands/context/index.js';
 import { registerDevice } from './commands/device/index.js';
 import { registerElement } from './commands/element/index.js';
+import { registerElements } from './commands/elements.js';
 import { registerMobile } from './commands/mobile/index.js';
 import { registerNav } from './commands/nav.js';
 import { registerOrientation } from './commands/orientation.js';
@@ -38,6 +39,7 @@ registerSession(program);
 
 registerElement(program);
 registerSource(program);
+registerElements(program);
 registerScreenshot(program);
 registerTap(program);
 registerSwipe(program);

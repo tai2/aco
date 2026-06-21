@@ -69,6 +69,17 @@ aco device list --platform ios           # iOS Simulators only
 aco device list --state all --json       # everything, machine-readable
 ```
 
+Once a session is live, `aco elements` is the on-device counterpart: it scans
+the current screen and lists only the elements that carry text, each with a
+copy-paste selector you can hand straight to `aco tap` -- no more reading a wall
+of `aco source` XML to hand-craft an XPath.
+
+```sh
+aco elements                                      # labelled elements + selectors
+aco elements --json | jq -r '.[].selector'        # just the selectors, for scripting
+aco tap --selector 'accessibility id:login.button'
+```
+
 ### 1. Start a session (foreground)
 
 ```sh
@@ -119,6 +130,7 @@ captured at `~/.aco/logs/aco-detach-<parent-pid>.log` for postmortem debugging.
 # from the latest record under ~/.aco/sessions/.
 aco source
 aco source --xpath '//XCUIElementTypeButton[@name="Login"]'   # filter locally
+aco elements                                                  # labelled elements + tap selectors
 aco screenshot --out ./shot.png
 aco tap        --x 100 --y 200
 aco swipe      --direction up

@@ -52,4 +52,19 @@ describe('Home screen: source, screenshot, find+text', () => {
   it('find + text reads the Home title', () => {
     expect(elementText(findId(TestIDs.home.title))).toBe('aco AUT');
   });
+
+  it('elements --json lists a known testID and its selector taps through', () => {
+    interface Row {
+      selector: string;
+      accessibilityId?: string;
+    }
+    const rows = JSON.parse(acoOk(['elements', '--json']).stdout) as Row[];
+    const want = `accessibility id:${TestIDs.home.navElements}`;
+    const row = rows.find((r) => r.selector === want);
+    expect(row?.accessibilityId).toBe(TestIDs.home.navElements);
+
+    // The discovered selector should drive `aco tap` straight into /elements.
+    acoOk(['tap', '--selector', want]);
+    expect(elementText(findId(TestIDs.elements.label))).toBe('Static label');
+  });
 });
