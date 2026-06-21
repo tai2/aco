@@ -37,6 +37,31 @@ export type InputSource = PointerSource | KeySource;
 // reads as a natural swipe glide (research.md §2).
 const MOVE_DEFAULT_DURATION = 100;
 
+// A short finger-down dwell so the touch reads as a tap, not a flick.
+// W3C taps are commonly 50-120ms; 100ms matches the move default above.
+const TAP_DEFAULT_DURATION = 100;
+
+export function buildTap(
+  x: number,
+  y: number,
+  duration: number = TAP_DEFAULT_DURATION,
+  pointerType: PointerType = 'touch',
+): PointerSource[] {
+  return [
+    {
+      id: 'finger1',
+      type: 'pointer',
+      parameters: { pointerType },
+      actions: [
+        { type: 'pointerMove', x, y, duration: 0, origin: 'viewport' },
+        { type: 'pointerDown', button: 0 },
+        { type: 'pause', duration },
+        { type: 'pointerUp', button: 0 },
+      ],
+    },
+  ];
+}
+
 export function parseGesture(spec: string): PointerItem[] {
   const steps = spec
     .split(',')
