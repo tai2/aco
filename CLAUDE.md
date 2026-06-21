@@ -7,7 +7,8 @@
    (Ctrl-C tears it down); pass `--detach` to fork it into the background.
    `aco session list` and `aco session stop` inspect/tear down stored sessions.
 2. Everything else (`aco source`, `aco screenshot`, `aco element ...`,
-   `aco tap`, `aco swipe`, `aco context ...`, `aco mobile call`) -- attaches to
+   `aco tap`, `aco swipe`, `aco context ...`, `aco ios ...`, `aco android ...`,
+   `aco mobile call`) -- attaches to
    an existing session. `--session <id>`, `--server-url <url>`, and
    `--platform <ios|android>` are all optional: by default they are resolved
    from the latest live record under `~/.aco/sessions/`. Explicit flags
@@ -50,8 +51,11 @@ useful when you add a new one:
    W3C `POST /execute/sync` endpoint with a `script` of `mobile: <name>` (e.g.
    `mobile: tap`, `mobile: swipeGesture`, `mobile: shell`). The set of names
    and their `{ required, optional }` parameters is defined by each driver in
-   its `build/lib/execute-method-map.js` export. `aco tap`, `aco swipe`, and
-   the generic `aco mobile call` escape hatch are wrappers over this layer.
+   its `build/lib/execute-method-map.js` export. **Every** such extension is a
+   generated first-class command under `aco ios <name>` / `aco android <name>`
+   (see "How we stay in sync with Appium"); `aco tap` / `aco swipe` are
+   hand-written cross-platform shims over the same layer; and `aco mobile call`
+   is the generic unvalidated escape hatch.
 
 **Device discovery.** `aco device list` enumerates iOS Simulators (via
 `xcrun simctl list -j devices`) and Android AVDs (via the
@@ -59,65 +63,75 @@ useful when you add a new one:
 that `appium-adb`'s `listEmulators()` uses). We do **not** depend on
 `node-simctl` or `appium-adb` at runtime — both are transitive devDeps from
 the driver packages. The same "snapshot at build time, don't share fate with
-driver releases" principle that governs `src/data/method-map-*.json` applies
+driver releases" principle that governs `src/data/extensions-*.json` applies
 here: discovery is a thin in-process wrapper around `xcrun` / the AVD
 directory, not a runtime import of the community packages.
 
 ## How we stay in sync with Appium
 
-Even though we don't ship the drivers at runtime, we still need to know what
-`mobile:` extensions each driver advertises so `aco mobile list` / `aco mobile
-call` can validate calls before sending them. We solve that by _pinning_ exact
-driver versions in `devDependencies` and **snapshotting the relevant
-interfaces at build time**.
+Every `mobile:` extension is a **generated first-class command**
+(`aco ios <name>` / `aco android <name>`). To generate good commands we need not
+just each extension's param *names* but their *types and optionality* — which
+the execute-method-map alone does not carry. So we _pin_ exact driver versions
+in `devDependencies` and **derive a typed manifest from the driver source at
+build time**.
 
-- `appium-xcuitest-driver` exports `build/lib/execute-method-map.js`
-  (~103 `mobile:` entries on the pinned 11.9.0). Each entry has
-  `{ command, params: { required?, optional? } }`.
-- `appium-uiautomator2-driver` exports `build/lib/execute-method-map.js`
-  which spreads `appium-android-driver/build/lib/execute-method-map.js`
-  (~72 entries) into 32 own entries.
+Two source artifacts per driver feed the generator:
 
-`scripts/generate-method-map.ts` reads those modules from the local
-`node_modules` and writes the contents to `src/data/method-map-ios.json` and
-`src/data/method-map-android.json`. Each snapshot is written as an envelope
-`{ drivers: [{ package, version }, ...], methods: { ... } }` so the bundled
-CLI carries provenance for which driver release the extension list was
-generated from. Users can surface this with `aco mobile list --platform <p>
---versions`. Those JSON files are committed and imported by
-`src/lib/method-map.ts`. The runtime CLI never touches the driver packages.
+- `build/lib/execute-method-map.js` — the name→command mapping and the
+  `{ required?, optional? }` param-name lists. `appium-xcuitest-driver` exports
+  ~103 entries (pinned 11.9.0). `appium-uiautomator2-driver` spreads
+  `appium-android-driver`'s map into its own for ~104 entries total.
+- `build/lib/commands/*.d.ts` — each `mobile:` entry's `command` field names the
+  implementing function (e.g. `mobile: scroll` → `mobileScroll`), whose shipped
+  TypeScript signature carries the real parameter types (`Direction`, `boolean`,
+  `number`, `Element | string`, …) and which are optional.
 
-When adding a new `mobile:` wrapper (`aco tap`, `aco swipe`, ...):
+`scripts/generate-extensions.ts` reads both, resolving each `command` to its
+declaring function, and reduces every param's source type to one of three
+coercion kinds: `number`, `boolean`, or `string` (the fallback for element ids,
+unions, arrays/objects, and anything else we cannot confidently reduce). It
+writes `src/data/extensions-ios.json` and `src/data/extensions-android.json` as
+envelopes `{ drivers: [{ package, version }, ...], extensions: { "mobile: x":
+{ command, params: [{ name, required, kind }] } } }` — provenance plus a typed
+manifest. Those JSON files are committed and imported by `src/lib/manifest.ts`
+(`loadManifest(platform)`); `src/commands/platform-extensions.ts` iterates the
+manifest at CLI-registration time to register every `aco ios`/`aco android`
+command, mapping each param to a `--<param>` flag that coerces by `kind`. The
+runtime CLI never touches the driver packages.
 
-1. Open both driver maps (or the committed JSON snapshots under `src/data/`)
-   and find the corresponding `mobile: ...` entry.
-2. Decide whether the new command needs a `--platform`-aware shim (because
-   the iOS and Android entries take different params) or whether one path
-   exists on both drivers with identical shape.
-3. Map CLI flags 1:1 to the entry's `required` + `optional` keys. Do not
-   invent extra keys -- Appium's base-driver silently drops unknown ones,
-   so a typo in an arg name becomes a silently ignored call rather than a
-   loud error.
-4. If the command does not yet appear in the pinned snapshot, bail out with
-   a helpful "unknown extension" error rather than sending to Appium and
-   letting it return W3C 405.
+Promotion is **generated** — there is no hand-written file per extension. The
+only hand-written `mobile:` shims are the cross-platform ergonomic ones
+(`aco tap` / `aco swipe`), which pick the platform-correct `mobile:` name from
+the live session's platform and supply defaults. When adding a new such shim:
 
-If the _connected_ Appium server happens to expose a different driver version
-than the one we snapshot-pinned, the W3C error is surfaced verbatim
-(`unknown command (script)`). We do **not** silently fall back to the legacy
-`/appium/...` endpoints; if WebdriverIO does so internally for its own
-high-level methods (e.g. `getContexts`), we let it -- but `aco mobile call`
-does not invent alternate encodings on the user's behalf. Surfacing Appium's
-own error keeps the failure mode legible and lets the user choose how to
-route around it.
+1. Find the corresponding `mobile: ...` entries in both committed manifests
+   under `src/data/` (or the driver maps).
+2. Decide whether it needs a `--platform`-aware shim (the iOS and Android
+   entries take different params) — otherwise the generated `aco ios`/`aco
+   android` command already covers it and no shim is needed.
+3. Map CLI flags 1:1 to the entry's params. Do not invent extra keys —
+   Appium's base-driver silently drops unknown ones, so a typo in an arg name
+   becomes a silently ignored call rather than a loud error.
+
+`aco mobile list` is a **live query** against the connected server
+(`GET /session/:id/appium/extensions`), not a snapshot read: it reports what the
+running driver actually advertises, which may be newer or older than our pinned
+manifest. `aco mobile call` is an **unvalidated** escape hatch — it forwards the
+name and JSON args verbatim with no local schema check (the server validates and
+silently drops unknown keys). If the connected server exposes a different driver
+version than the one we pinned, the W3C error is surfaced verbatim
+(`unknown command (script)`) — we do **not** invent alternate encodings or fall
+back to the legacy `/appium/...` endpoints. Surfacing Appium's own error keeps
+the failure mode legible.
 
 ## Updating the pinned drivers
 
 ```sh
 pnpm up appium-xcuitest-driver appium-uiautomator2-driver
-pnpm gen:method-map      # rewrites src/data/method-map-*.json from the new devDeps
-git diff src/data/       # eyeball what changed
-# After bumping, audit each --platform-aware command in src/commands/
+pnpm gen:extensions      # rederives src/data/extensions-*.json (types + provenance) from the new devDeps
+git diff src/data/       # eyeball what changed (new/removed commands, changed param types/optionality)
+# After bumping, audit the --platform-aware shims (tap/swipe) in src/commands/
 # for params that may have been renamed or removed.
 ```
 

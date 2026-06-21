@@ -32,7 +32,7 @@
     "aut:start": "pnpm --dir aut run start",
     "aut:build:ios": "pnpm --dir aut run build:ios",
     "aut:build:android": "pnpm --dir aut run build:android",
-    "gen:method-map": "node --import tsx/esm scripts/generate-method-map.ts",
+    "gen:extensions": "node --import tsx/esm scripts/generate-extensions.ts",
     "prepublishOnly": "pnpm run verify"
   },
   "dependencies": {

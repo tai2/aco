@@ -1,0 +1,1456 @@
+{
+  "drivers": [
+    {
+      "package": "appium-xcuitest-driver",
+      "version": "11.9.0"
+    }
+  ],
+  "extensions": {
+    "mobile: tap": {
+      "command": "mobileTap",
+      "params": [
+        {
+          "name": "x",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "y",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: scroll": {
+      "command": "mobileScroll",
+      "params": [
+        {
+          "name": "name",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "direction",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "predicateString",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "toVisible",
+          "required": false,
+          "kind": "boolean"
+        },
+        {
+          "name": "distance",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: selectPickerWheelValue": {
+      "command": "mobileSelectPickerWheelValue",
+      "params": [
+        {
+          "name": "elementId",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "order",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "offset",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: sendMemoryWarning": {
+      "command": "mobileSendMemoryWarning",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: swipe": {
+      "command": "mobileSwipe",
+      "params": [
+        {
+          "name": "direction",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "velocity",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: pinch": {
+      "command": "mobilePinch",
+      "params": [
+        {
+          "name": "scale",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "velocity",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: doubleTap": {
+      "command": "mobileDoubleTap",
+      "params": [
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "x",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "y",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: twoFingerTap": {
+      "command": "mobileTwoFingerTap",
+      "params": [
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: tapWithNumberOfTaps": {
+      "command": "mobileTapWithNumberOfTaps",
+      "params": [
+        {
+          "name": "numberOfTouches",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "numberOfTaps",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: touchAndHold": {
+      "command": "mobileTouchAndHold",
+      "params": [
+        {
+          "name": "duration",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "x",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "y",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: dragFromToForDuration": {
+      "command": "mobileDragFromToForDuration",
+      "params": [
+        {
+          "name": "duration",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "fromX",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "fromY",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "toX",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "toY",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: rotateElement": {
+      "command": "mobileRotateElement",
+      "params": [
+        {
+          "name": "rotation",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "velocity",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: dragFromToWithVelocity": {
+      "command": "mobileDragFromToWithVelocity",
+      "params": [
+        {
+          "name": "pressDuration",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "holdDuration",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "velocity",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "fromElementId",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "toElementId",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "fromX",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "fromY",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "toX",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "toY",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: forcePress": {
+      "command": "mobileForcePress",
+      "params": [
+        {
+          "name": "x",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "y",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "duration",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "pressure",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: scrollToElement": {
+      "command": "mobileScrollToElement",
+      "params": [
+        {
+          "name": "elementId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: alert": {
+      "command": "mobileHandleAlert",
+      "params": [
+        {
+          "name": "action",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "buttonLabel",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: setPasteboard": {
+      "command": "mobileSetPasteboard",
+      "params": [
+        {
+          "name": "content",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "encoding",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: getPasteboard": {
+      "command": "mobileGetPasteboard",
+      "params": [
+        {
+          "name": "encoding",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: source": {
+      "command": "mobileGetSource",
+      "params": [
+        {
+          "name": "format",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "excludedAttributes",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: getAppStrings": {
+      "command": "getStrings",
+      "params": [
+        {
+          "name": "language",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "stringFile",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: getContexts": {
+      "command": "mobileGetContexts",
+      "params": [
+        {
+          "name": "waitForWebviewMs",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: installApp": {
+      "command": "mobileInstallApp",
+      "params": [
+        {
+          "name": "app",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "timeoutMs",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "checkVersion",
+          "required": false,
+          "kind": "boolean"
+        }
+      ]
+    },
+    "mobile: isAppInstalled": {
+      "command": "mobileIsAppInstalled",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: removeApp": {
+      "command": "mobileRemoveApp",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: launchApp": {
+      "command": "mobileLaunchApp",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "arguments",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "environment",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: terminateApp": {
+      "command": "mobileTerminateApp",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: killApp": {
+      "command": "mobileKillApp",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: queryAppState": {
+      "command": "mobileQueryAppState",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: activateApp": {
+      "command": "mobileActivateApp",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: listApps": {
+      "command": "mobileListApps",
+      "params": [
+        {
+          "name": "applicationType",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "returnAttributes",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: clearApp": {
+      "command": "mobileClearApp",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: viewportScreenshot": {
+      "command": "getViewportScreenshot",
+      "params": []
+    },
+    "mobile: viewportRect": {
+      "command": "getViewportRect",
+      "params": []
+    },
+    "mobile: startPerfRecord": {
+      "command": "mobileStartPerfRecord",
+      "params": [
+        {
+          "name": "timeout",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "profileName",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "pid",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: stopPerfRecord": {
+      "command": "mobileStopPerfRecord",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "user",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "pass",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "method",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "profileName",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "headers",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "fileFieldName",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "formFields",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: installCertificate": {
+      "command": "mobileInstallCertificate",
+      "params": [
+        {
+          "name": "content",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "commonName",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "isRoot",
+          "required": false,
+          "kind": "boolean"
+        }
+      ]
+    },
+    "mobile: removeCertificate": {
+      "command": "mobileRemoveCertificate",
+      "params": [
+        {
+          "name": "name",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: listCertificates": {
+      "command": "mobileListCertificates",
+      "params": []
+    },
+    "mobile: startLogsBroadcast": {
+      "command": "mobileStartLogsBroadcast",
+      "params": []
+    },
+    "mobile: stopLogsBroadcast": {
+      "command": "mobileStopLogsBroadcast",
+      "params": []
+    },
+    "mobile: batteryInfo": {
+      "command": "mobileGetBatteryInfo",
+      "params": []
+    },
+    "mobile: performAccessibilityAudit": {
+      "command": "mobilePerformAccessibilityAudit",
+      "params": [
+        {
+          "name": "auditTypes",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: deviceInfo": {
+      "command": "mobileGetDeviceInfo",
+      "params": []
+    },
+    "mobile: getDeviceTime": {
+      "command": "mobileGetDeviceTime",
+      "params": [
+        {
+          "name": "format",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: activeAppInfo": {
+      "command": "mobileGetActiveAppInfo",
+      "params": []
+    },
+    "mobile: deviceScreenInfo": {
+      "command": "getScreenInfo",
+      "params": []
+    },
+    "mobile: pressButton": {
+      "command": "mobilePressButton",
+      "params": [
+        {
+          "name": "name",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "durationSeconds",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: enrollBiometric": {
+      "command": "mobileEnrollBiometric",
+      "params": [
+        {
+          "name": "isEnabled",
+          "required": false,
+          "kind": "boolean"
+        }
+      ]
+    },
+    "mobile: sendBiometricMatch": {
+      "command": "mobileSendBiometricMatch",
+      "params": [
+        {
+          "name": "type",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "match",
+          "required": false,
+          "kind": "boolean"
+        }
+      ]
+    },
+    "mobile: isBiometricEnrolled": {
+      "command": "mobileIsBiometricEnrolled",
+      "params": []
+    },
+    "mobile: clearKeychains": {
+      "command": "mobileClearKeychains",
+      "params": []
+    },
+    "mobile: getPermission": {
+      "command": "mobileGetPermission",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "service",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: setPermission": {
+      "command": "mobileSetPermissions",
+      "params": [
+        {
+          "name": "access",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: resetPermission": {
+      "command": "mobileResetPermission",
+      "params": [
+        {
+          "name": "service",
+          "required": true,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: getAppearance": {
+      "command": "mobileGetAppearance",
+      "params": []
+    },
+    "mobile: setAppearance": {
+      "command": "mobileSetAppearance",
+      "params": [
+        {
+          "name": "style",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: getIncreaseContrast": {
+      "command": "mobileGetIncreaseContrast",
+      "params": []
+    },
+    "mobile: setIncreaseContrast": {
+      "command": "mobileSetIncreaseContrast",
+      "params": [
+        {
+          "name": "increaseContrast",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: contentSize": {
+      "command": "mobileGetContentSize",
+      "params": []
+    },
+    "mobile: setContentSize": {
+      "command": "mobileSetContentSize",
+      "params": [
+        {
+          "name": "size",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: getClipboard": {
+      "command": "getClipboard",
+      "params": [
+        {
+          "name": "contentType",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: setClipboard": {
+      "command": "setClipboard",
+      "params": [
+        {
+          "name": "content",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "contentType",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: siriCommand": {
+      "command": "mobileSiriCommand",
+      "params": [
+        {
+          "name": "text",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: pushFile": {
+      "command": "mobilePushFile",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "payload",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: pullFile": {
+      "command": "mobilePullFile",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: pullFolder": {
+      "command": "mobilePullFolder",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: deleteFile": {
+      "command": "mobileDeleteFile",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: deleteFolder": {
+      "command": "mobileDeleteFolder",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: runXCTest": {
+      "command": "mobileRunXCTest",
+      "params": [
+        {
+          "name": "testRunnerBundleId",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "appUnderTestBundleId",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "xctestBundleId",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "args",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "testType",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "env",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "timeout",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: installXCTestBundle": {
+      "command": "mobileInstallXCTestBundle",
+      "params": [
+        {
+          "name": "xctestApp",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: listXCTestBundles": {
+      "command": "mobileListXCTestBundles",
+      "params": []
+    },
+    "mobile: startXCTestScreenRecording": {
+      "command": "mobileStartXctestScreenRecording",
+      "params": [
+        {
+          "name": "fps",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "codec",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: getXCTestScreenRecordingInfo": {
+      "command": "mobileGetXctestScreenRecordingInfo",
+      "params": []
+    },
+    "mobile: stopXCTestScreenRecording": {
+      "command": "mobileStopXctestScreenRecording",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "user",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "pass",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "headers",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "fileFieldName",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "formFields",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "method",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: pushNotification": {
+      "command": "mobilePushNotification",
+      "params": [
+        {
+          "name": "bundleId",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "payload",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: expectNotification": {
+      "command": "mobileExpectNotification",
+      "params": [
+        {
+          "name": "name",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "type",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "timeoutSeconds",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: performIoHidEvent": {
+      "command": "mobilePerformIoHidEvent",
+      "params": [
+        {
+          "name": "page",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "usage",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "durationSeconds",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: configureLocalization": {
+      "command": "mobileConfigureLocalization",
+      "params": [
+        {
+          "name": "keyboard",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "language",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "locale",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: resetLocationService": {
+      "command": "mobileResetLocationService",
+      "params": []
+    },
+    "mobile: startNetworkMonitor": {
+      "command": "mobileStartNetworkMonitor",
+      "params": []
+    },
+    "mobile: stopNetworkMonitor": {
+      "command": "mobileStopNetworkMonitor",
+      "params": []
+    },
+    "mobile: listConditionInducers": {
+      "command": "listConditionInducers",
+      "params": []
+    },
+    "mobile: enableConditionInducer": {
+      "command": "enableConditionInducer",
+      "params": [
+        {
+          "name": "conditionID",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "profileID",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: disableConditionInducer": {
+      "command": "disableConditionInducer",
+      "params": []
+    },
+    "mobile: updateSafariPreferences": {
+      "command": "mobileUpdateSafariPreferences",
+      "params": [
+        {
+          "name": "preferences",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: calibrateWebToRealCoordinatesTranslation": {
+      "command": "mobileCalibrateWebToRealCoordinatesTranslation",
+      "params": []
+    },
+    "mobile: keys": {
+      "command": "mobileKeys",
+      "params": [
+        {
+          "name": "keys",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "elementId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: deepLink": {
+      "command": "mobileDeepLink",
+      "params": [
+        {
+          "name": "url",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "bundleId",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: setSimulatedLocation": {
+      "command": "mobileSetSimulatedLocation",
+      "params": [
+        {
+          "name": "latitude",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "longitude",
+          "required": true,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: getSimulatedLocation": {
+      "command": "mobileGetSimulatedLocation",
+      "params": []
+    },
+    "mobile: resetSimulatedLocation": {
+      "command": "mobileResetSimulatedLocation",
+      "params": []
+    },
+    "mobile: shake": {
+      "command": "mobileShake",
+      "params": []
+    },
+    "mobile: startScreenRecording": {
+      "command": "mobileStartScreenRecording",
+      "params": [
+        {
+          "name": "videoType",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "videoQuality",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "videoFps",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "videoFilters",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "videoScale",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "pixelFormat",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "forceRestart",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "timeLimit",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "hardwareAcceleration",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "remotePath",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "user",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "pass",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "headers",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "fileFieldName",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "formFields",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "method",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: stopScreenRecording": {
+      "command": "mobileStopScreenRecording",
+      "params": [
+        {
+          "name": "remotePath",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "user",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "pass",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "headers",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "fileFieldName",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "formFields",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "method",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: startAudioRecording": {
+      "command": "startAudioRecording",
+      "params": [
+        {
+          "name": "audioInput",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "timeLimit",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "audioCodec",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "audioBitrate",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "audioChannels",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "audioRate",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "forceRestart",
+          "required": false,
+          "kind": "boolean"
+        }
+      ]
+    },
+    "mobile: stopAudioRecording": {
+      "command": "stopAudioRecording",
+      "params": []
+    },
+    "mobile: hideKeyboard": {
+      "command": "mobileHideKeyboard",
+      "params": [
+        {
+          "name": "keys",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: isKeyboardShown": {
+      "command": "isKeyboardShown",
+      "params": []
+    },
+    "mobile: lock": {
+      "command": "lock",
+      "params": [
+        {
+          "name": "seconds",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: unlock": {
+      "command": "unlock",
+      "params": []
+    },
+    "mobile: isLocked": {
+      "command": "isLocked",
+      "params": []
+    },
+    "mobile: backgroundApp": {
+      "command": "background",
+      "params": [
+        {
+          "name": "seconds",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: simctl": {
+      "command": "mobileSimctl",
+      "params": [
+        {
+          "name": "command",
+          "required": true,
+          "kind": "string"
+        },
+        {
+          "name": "args",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "timeout",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    }
+  }
+}
