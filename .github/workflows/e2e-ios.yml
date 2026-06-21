@@ -2,7 +2,7 @@ name: e2e-ios
 
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
   pull_request:
     # Opt-in: only run when e2e-relevant paths change, to save macOS minutes.
     paths:
@@ -66,12 +66,13 @@ jobs:
 
       # Restore only -- the matching save step runs right after the build below,
       # NOT in a post-job hook. Caches are branch-scoped: a run can read caches
-      # from its own ref, its base branch, or the default branch (main) only --
-      # never a sibling PR's. So PRs can only share this .app if a *main* run
-      # seeds it. The combined actions/cache save is post-job, so when the flaky
-      # boot/WDA/e2e steps fail the job, main never seeds the cache and every PR
-      # rebuilds cold. Splitting restore/save lets us persist the .app the moment
-      # the deterministic build succeeds, before the flaky steps can fail the job.
+      # from its own ref, its base branch, or the default branch (develop) only
+      # -- never a sibling PR's. So PRs can only share this .app if a *develop*
+      # run seeds it. The combined actions/cache save is post-job, so when the
+      # flaky boot/WDA/e2e steps fail the job, develop never seeds the cache and
+      # every PR rebuilds cold. Splitting restore/save lets us persist the .app
+      # the moment the deterministic build succeeds, before the flaky steps can
+      # fail the job.
       - name: Restore built AUT (.app)
         id: aut-cache
         uses: actions/cache/restore@v4
@@ -91,8 +92,8 @@ jobs:
 
       # Persist the freshly built .app immediately -- before the boot/WDA/e2e
       # steps that flake -- so a green build seeds the cache even when the e2e
-      # run later fails. On main this is what makes the cache readable by every
-      # PR. cache-primary-key echoes the exact key the restore step computed.
+      # run later fails. On develop this is what makes the cache readable by
+      # every PR. cache-primary-key echoes the exact key the restore step computed.
       - name: Save built AUT (.app)
         if: steps.aut-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -131,7 +132,7 @@ jobs:
       # path; the glob avoids hard-coding that hash, and usePrebuiltWDA=true
       # relaunches from this exact default-derivedDataPath location. Split
       # restore/save (like the .app) so a green pre-build seeds the cache even
-      # when the flaky boot/WDA-launch/e2e steps later fail the job -- on main
+      # when the flaky boot/WDA-launch/e2e steps later fail the job -- on develop
       # that seed is what lets every PR read the cache.
       - name: Restore prebuilt WebDriverAgent
         id: wda-cache
