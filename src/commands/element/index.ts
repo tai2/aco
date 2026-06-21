@@ -1,4 +1,5 @@
 import type { Command } from '@commander-js/extra-typings';
+import { registerElementActive } from './active.js';
 import { registerElementAttribute } from './attribute.js';
 import { registerElementClear } from './clear.js';
 import { registerElementClick } from './click.js';
@@ -16,6 +17,7 @@ export function registerElement(program: Command): void {
     .command('element')
     .description('W3C element commands');
   registerElementFind(element);
+  registerElementActive(element);
   registerElementClick(element);
   registerElementText(element);
   registerElementSendKeys(element);

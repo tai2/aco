@@ -559,6 +559,12 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('--element');
   });
 
+  it('aco element active --help describes the active-element lookup', () => {
+    const result = runCli(['element', 'active', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('GET /element/active');
+  });
+
   it('aco url --help documents the optional [url] argument', () => {
     const result = runCli(['url', '--help']);
     expect(result.status).toBe(0);
