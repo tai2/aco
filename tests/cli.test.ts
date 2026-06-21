@@ -78,6 +78,53 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('send-keys');
   });
 
+  it('aco swipe --help surfaces the targeting and gesture flags', () => {
+    const result = runCli(['swipe', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--selector');
+    expect(result.stdout).toContain('--label');
+    expect(result.stdout).toContain('--element');
+    expect(result.stdout).toContain('--direction');
+    expect(result.stdout).toContain('--duration');
+    expect(result.stdout).toContain('--percent');
+    expect(result.stdout).toContain('--from');
+    expect(result.stdout).toContain('--to');
+  });
+
+  it('aco swipe rejects more than one element source', () => {
+    const result = runCli(['swipe', '--label', 'a', '--element', 'b']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'pass at most one of --selector, --label, --element',
+    );
+  });
+
+  it('aco swipe rejects --from without --to', () => {
+    const result = runCli(['swipe', '--from', '1,2']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('pass both --from and --to, or neither');
+  });
+
+  it('aco swipe rejects coordinates combined with an element', () => {
+    const result = runCli([
+      'swipe',
+      '--label',
+      'a',
+      '--from',
+      '1,2',
+      '--to',
+      '3,4',
+    ]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--from/--to are ignored');
+  });
+
+  it('aco swipe rejects an invalid --direction', () => {
+    const result = runCli(['swipe', '--direction', 'sideways']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--direction must be up|down|left|right');
+  });
+
   it('aco element property --help documents --element and --name', () => {
     const result = runCli(['element', 'property', '--help']);
     expect(result.status).toBe(0);

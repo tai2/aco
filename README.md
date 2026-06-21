@@ -133,7 +133,8 @@ aco source --xpath '//XCUIElementTypeButton[@name="Login"]'   # filter locally
 aco elements                                                  # labelled elements + tap selectors
 aco screenshot --out ./shot.png
 aco tap        --x 100 --y 200
-aco swipe      --direction up
+aco swipe      --direction up                                 # within the default scroll view
+aco swipe      --direction left --label home.carousel         # within a labelled element
 aco send-keys  --selector 'accessibility id:login.username' --text 'alice'   # clears, then types
 aco send-keys  --label login.username --text '!' --no-clear                  # append instead
 aco scroll-into-view "accessibility id:gestures.row.29" --direction up   # swipe until visible
@@ -169,9 +170,15 @@ chains. `--type <text>` appends a key source that types the text into the
 focused field (focus it first with a `--gesture` tap or `aco tap`). `pointerType`
 defaults to `touch` for the ergonomic form (overridable with `--pointer-type`);
 the `--json` escape hatch passes a raw W3C actions array straight through,
-untouched. By contrast, `aco tap`/`aco swipe` ride the driver-specific `mobile:`
-extension layer. Gestures release held input state by default; `--no-release`
-holds it across calls and `--release-only` issues the standalone cleanup.
+untouched. `aco tap`/`aco swipe` are higher-level ergonomic forms over the same
+W3C pointer layer (`aco swipe` wraps WebdriverIO's cross-platform `swipe`; name
+the element to swipe within with `--selector`/`--label`/`--element`, or pass raw
+`--from <x,y>`/`--to <x,y>` coordinates). Because `aco swipe` is a real pointer
+drag, the same Android gesture-nav caveat as `scroll-into-view` applies: on a
+full-height scroll container the default `--percent 0.95` starts the drag inside
+the bottom gesture zone (backgrounding the app); pass a smaller `--percent`
+(e.g. `0.5`). Gestures release held input state by default; `--no-release` holds it across
+calls and `--release-only` issues the standalone cleanup.
 
 `aco send-keys` is the ergonomic, selector-driven typing command (`POST
 /element/:id/value`): name the target with `--selector`, `--label`, or a raw
@@ -184,9 +191,11 @@ append-only) the same way top-level `aco tap` sits above `aco element click`.
 distinguishes from the static `aco element attribute`.
 
 `aco scroll-into-view` wraps WebdriverIO's `element.scrollIntoView` intact --
-unlike `tap`/`swipe` it takes a **WDIO selector string** (e.g.
-`"accessibility id:gestures.row.29"`), not an element id, because WDIO
-re-resolves the target as it swipes until the element is displayed. It defaults
+its **positional WDIO selector string** (e.g.
+`"accessibility id:gestures.row.29"`) names the element to *bring on screen*,
+which WDIO re-resolves as it swipes until that element is displayed. (Contrast
+`aco swipe`, whose `--selector`/`--label`/`--element` name the element to swipe
+*within*.) It defaults
 to `direction up` and `maxScrolls 10` and uses the platform default scroll
 container unless `--scrollable <selector>` is given. It targets the **native**
 context. On Android with gesture navigation, a full-height scroll container can
@@ -233,10 +242,11 @@ live server has but the pinned manifest does not:
 aco mobile call --name "mobile: swipe" --args '{"direction":"up"}'
 ```
 
-`aco tap` / `aco swipe` stay as ergonomic **cross-platform** shims (one command
-picks the right `mobile:` name by the live session's platform, and they supply
-defaults). The generated `aco ios`/`aco android` commands are the exhaustive,
-one-platform-per-namespace low-level surface.
+`aco tap` / `aco swipe` stay as ergonomic **cross-platform** commands: both ride
+the W3C pointer layer (`aco swipe` via WebdriverIO's cross-platform `swipe`), so
+one command works on either platform and supplies sensible defaults. The
+generated `aco ios`/`aco android` commands (e.g. `aco ios swipe` → `mobile:
+swipe`) are the exhaustive, one-platform-per-namespace low-level surface.
 
 ### 4. Inspect / stop stored sessions
 

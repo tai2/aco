@@ -23,13 +23,44 @@ describe('gestures: tap + swipe on /gestures', () => {
 
   it('swipe up within the scroll view completes without error', () => {
     const scrollId = findId(TestIDs.gestures.scroll);
-    const r = acoOk(['swipe', '--direction', 'up', '--element', scrollId]);
+    // --percent 0.5 keeps the W3C pointer drag in the middle of the scrollable
+    // element. WDIO's swipe is a real pointer gesture (not mobile: swipeGesture),
+    // so the default percent (0.95) starts at ~97.5% down the flex:1 /gestures
+    // ScrollView -- inside Android's bottom gesture-nav zone, which backgrounds
+    // the app instead of scrolling (same caveat as scroll-into-view below).
+    const r = acoOk([
+      'swipe',
+      '--direction',
+      'up',
+      '--percent',
+      '0.5',
+      '--element',
+      scrollId,
+    ]);
     expect(r.stdout.trim()).toBe('ok');
-    // The ScrollView renders all rows, so a high-index row stays present in
-    // the source tree -- asserting it confirms the gesture left the tree
-    // intact rather than crashing the screen (research.md §6.11).
-    const xml = acoOk(['source']).stdout;
-    expect(xml).toContain(TestIDs.gestures.row(29));
+    // The scroll container is still present afterward, confirming the swipe
+    // scrolled within the screen rather than backgrounding the app (Android's
+    // gesture-nav zone) or crashing it. We avoid asserting a specific high-index
+    // row: XCUITest dumps the full child tree, but UiAutomator2 only includes the
+    // rendered/visible row window, so which rows are present depends on the
+    // platform and scroll distance (same portability caveat as actions.e2e.ts).
+    expect(acoOk(['source']).stdout).toContain(TestIDs.gestures.scroll);
+  });
+
+  it('swipe up resolves the scroll view by --selector', () => {
+    // Same gesture as above, but naming the target with the ergonomic
+    // selector form (parity with `aco tap`) instead of a pre-resolved id.
+    const r = acoOk([
+      'swipe',
+      '--direction',
+      'up',
+      '--percent',
+      '0.5',
+      '--selector',
+      `accessibility id:${TestIDs.gestures.scroll}`,
+    ]);
+    expect(r.stdout.trim()).toBe('ok');
+    expect(acoOk(['source']).stdout).toContain(TestIDs.gestures.scroll);
   });
 
   it('scroll-into-view brings a deep row on screen', () => {
