@@ -15,11 +15,14 @@
    always win. When no session has been started and no flags are passed, the
    resolver errors out cleanly.
 
-We do **not** redistribute Appium or its drivers inside the `aco` package. We
-assume the user has installed Appium themselves (`npm i -g appium`) and added
-the drivers they need (`appium driver install xcuitest`, etc.). `aco session
-start` spawns `appium` by name from `PATH`; driver discovery is left to the
-user's `APPIUM_HOME`.
+We do **not** redistribute the Appium server or its drivers inside the `aco`
+package. We assume the user has installed Appium themselves (`npm i -g appium`)
+and added the drivers they need (`appium driver install xcuitest`, etc.). `aco
+session start` spawns `appium` by name from `PATH`; driver discovery is left to
+the user's `APPIUM_HOME`. This rule covers the server and the driver packages
+only — smaller utility libraries from the Appium ecosystem (e.g. `appium-adb`,
+`appium-ios-device`) are fine to take as direct deps; see "Device discovery"
+below.
 
 `~/.aco/sessions/<sessionId>.json` is a **convenience layer for default
 resolution**, not a registry the subcommands depend on. With explicit
@@ -66,12 +69,18 @@ useful when you add a new one:
 **Device discovery.** `aco device list` enumerates iOS Simulators (via
 `xcrun simctl list -j devices`) and Android AVDs (via the
 `$ANDROID_AVD_HOME`/`$ANDROID_EMULATOR_HOME`/`~/.android/avd` fallback chain
-that `appium-adb`'s `listEmulators()` uses). We do **not** depend on
-`node-simctl` or `appium-adb` at runtime — both are transitive devDeps from
-the driver packages. The same "snapshot at build time, don't share fate with
-driver releases" principle that governs `src/data/extensions-*.json` applies
-here: discovery is a thin in-process wrapper around `xcrun` / the AVD
-directory, not a runtime import of the community packages.
+that `appium-adb`'s `listEmulators()` uses).
+
+The constraint here is about **redistribution, not dependency**: we don't ship
+the Appium server or the heavyweight driver packages (see above), but small,
+focused utility packages — e.g. `appium-adb` and `appium-ios-device` — are
+fair game as **direct runtime deps** of `aco` when they're the right tool
+(e.g. enumerating connected real devices over USB). Prefer them over
+hand-rolling `adb`/`xcrun`/protocol plumbing when they cover the need.
+This differs from `src/data/extensions-*.json`, which we snapshot at build
+time precisely to avoid sharing release-fate with the *driver* packages; that
+"snapshot, don't import" rule applies to the drivers, not to standalone
+utility libraries like these.
 
 ## How we stay in sync with Appium
 
