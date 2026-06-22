@@ -5,6 +5,11 @@
 1. `aco session start` -- spawns the user's `appium` (from `PATH`) and creates a
    W3C session against an AUT. Runs in the foreground by default
    (Ctrl-C tears it down); pass `--detach` to fork it into the background.
+   Targets simulators/emulators and **real devices**: with no `--udid`/`--avd`
+   it prefers a connected real device, falling back to auto-booting the first
+   Android AVD. iOS real devices take code-signing flags (`--xcode-org-id`,
+   `--xcode-signing-id`, `--allow-provisioning-device-registration`,
+   `--updated-wda-bundle-id`) that map to the corresponding `appium:*` caps.
    `aco session list` and `aco session stop` inspect/tear down stored sessions.
 2. Everything else (`aco source`, `aco screenshot`, `aco element ...`,
    `aco tap`, `aco swipe`, `aco context ...`, `aco ios ...`, `aco android ...`,
@@ -66,21 +71,48 @@ useful when you add a new one:
    /actions` and `aco swipe` over WebdriverIO's cross-platform `swipe` -- see
    family 1 above.)
 
-**Device discovery.** `aco device list` enumerates iOS Simulators (via
-`xcrun simctl list -j devices`) and Android AVDs (via the
-`$ANDROID_AVD_HOME`/`$ANDROID_EMULATOR_HOME`/`~/.android/avd` fallback chain
-that `appium-adb`'s `listEmulators()` uses).
+**Device discovery.** `aco device list` enumerates four kinds of target:
+iOS Simulators (via `xcrun simctl list -j devices`, in `src/lib/devices/ios.ts`),
+**connected iOS real devices** (via `appium-ios-device`'s
+`utilities.getConnectedDevices`/`getDeviceName`/`getOSVersion`, in
+`ios-real.ts`), Android AVD *definitions* (via the
+`$ANDROID_AVD_HOME`/`$ANDROID_EMULATOR_HOME`/`~/.android/avd` fallback chain, in
+`android.ts`), and **connected Android devices + running emulators** (via
+`appium-adb`'s `ADB.createADB().getConnectedDevices({ verbose: true })`, in
+`android-real.ts`). `src/lib/devices/index.ts` fans out to all four and
+reconciles: a running emulator surfaces by its `adb` serial and the matching AVD
+`.ini` definition row is collapsed into it (keyed on the `model:` AVD name from
+the `adb devices -l` long format). Each lister returns `{ devices, notes }` and
+**never throws** — every failure (no `adb`, no `usbmuxd`, locked/untrusted
+device) degrades to a friendly note so the rest of the list still renders.
+
+The two real-device listers load `appium-adb`/`appium-ios-device` via a
+**guarded dynamic `import()`**, not a static top-level import. This is
+deliberate: those packages pull in `@appium/support` → `read-pkg` (ESM-only) →
+`unicorn-magic`, whose subpath exports the `tsx` dev runtime (`pnpm dev`) cannot
+resolve (`ERR_PACKAGE_PATH_NOT_EXPORTED`); a static import would crash the whole
+CLI at startup there. With the dynamic import, a resolution failure degrades to
+an "unavailable in this runtime" note, so `pnpm dev` still lists simulators/AVDs
+while the built `node dist` runtime (Node's native resolver) is fully
+functional. It also keeps these libraries off the CLI startup path.
 
 The constraint here is about **redistribution, not dependency**: we don't ship
 the Appium server or the heavyweight driver packages (see above), but small,
-focused utility packages — e.g. `appium-adb` and `appium-ios-device` — are
-fair game as **direct runtime deps** of `aco` when they're the right tool
-(e.g. enumerating connected real devices over USB). Prefer them over
-hand-rolling `adb`/`xcrun`/protocol plumbing when they cover the need.
+focused utility packages — `appium-adb` and `appium-ios-device` — are direct
+runtime `dependencies` of `aco` (they are what `ios-real.ts`/`android-real.ts`
+import) precisely because they're the right tool for enumerating connected real
+devices over USB. Prefer them over hand-rolling `adb`/`xcrun`/protocol plumbing.
 This differs from `src/data/extensions-*.json`, which we snapshot at build
 time precisely to avoid sharing release-fate with the *driver* packages; that
 "snapshot, don't import" rule applies to the drivers, not to standalone
-utility libraries like these.
+utility libraries like these. (`appium-ios-device` ships no types, so
+`src/types/appium-ios-device.d.ts` is an ambient shim for the `utilities` we
+use.) We also depend on `@appium/logger` (a small, clean utility package) so
+`src/lib/devices/appium-log.ts` can lower the process-global appium log level to
+`warn` — without it, `appium-ios-device`/`appium-adb` spew debug-level
+`usbmuxd`/`adb` stack traces to stderr on every `aco device list` with no real
+device attached. We do **not** depend on `@appium/support` for this (it drags in
+the same `read-pkg`/`unicorn-magic` chain noted above).
 
 ## How we stay in sync with Appium
 

@@ -34,13 +34,15 @@ npx aco --help
 
 ### Discover devices
 
-List the iOS Simulators and Android AVDs you can target. Pass a row's `NAME` to
-`session start --device-name` (iOS) or `--avd` (Android), or its `ID` to
-`--udid` (iOS).
+List the iOS Simulators, Android AVDs, **and connected real devices** you can
+target. Pass a row's `NAME` to `session start --device-name` (iOS) or `--avd`
+(Android emulator), or its `ID` to `--udid` (real device or iOS simulator).
+Connected iPhones/iPads (over USB) and `adb`-visible Android handsets show up as
+`KIND = real`; running emulators show up by their `adb` serial.
 
 ```sh
 aco device list                          # both platforms, only "available" rows
-aco device list --platform ios           # iOS Simulators only
+aco device list --platform ios           # iOS Simulators + connected iPhones/iPads
 aco device list --state all --json       # everything, machine-readable
 ```
 
@@ -53,12 +55,27 @@ aco session start --platform ios --app /tmp/MyApp.app --device-name "iPhone 15"
 # Android emulator
 aco session start --platform android --app com.example.app --app-activity .MainActivity --avd Pixel_8_API_34
 
+# iOS real device (requires code signing for the on-device WebDriverAgent build)
+aco session start --platform ios --udid <40-char-udid> \
+  --app /tmp/MyApp.ipa --xcode-org-id ABCDE12345
+
+# Android real device (auto-selected when one is plugged in and no --avd given)
+aco session start --platform android --app com.example.app --app-activity .MainActivity
+
 # Background instead of foreground
 aco session start --detach --platform ios --app /tmp/MyApp.app
 
 # Forward extra Appium server flags
 aco session start --platform android --log-level debug --use-plugins images
 ```
+
+When you pass neither `--udid` nor `--avd`, `session start` prefers a connected
+real device if one is present (announcing which device it picked on stderr), and
+only otherwise falls back to auto-booting the first Android AVD. Explicit
+`--udid`/`--avd` always win. iOS real devices additionally need code signing for
+the on-device WebDriverAgent build -- pass `--xcode-org-id` (and optionally
+`--xcode-signing-id`, `--allow-provisioning-device-registration`,
+`--updated-wda-bundle-id`).
 
 `session start` forwards a curated subset of Appium's server flags
 (`--base-path`, `--log-level`, `--address`, `--relaxed-security`,

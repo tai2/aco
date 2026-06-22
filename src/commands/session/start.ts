@@ -10,6 +10,10 @@ import {
 import { buildCapabilities } from '../../lib/caps.js';
 import type { Platform } from '../../lib/connection.js';
 import { listAndroidAvds } from '../../lib/devices/android.js';
+import {
+  listAndroidRealDevices,
+  listIosRealDevices,
+} from '../../lib/devices/index.js';
 import { pickFreePort } from '../../lib/port.js';
 import {
   type SessionRecord,
@@ -180,6 +184,23 @@ export function registerSessionStart(session: Command): void {
       'Android only -- AVD name of the emulator to target (appium:avd)',
     )
     .option(
+      '--xcode-org-id <id>',
+      'iOS real device -- appium:xcodeOrgId (Apple Team ID for WDA signing)',
+    )
+    .option(
+      '--xcode-signing-id <id>',
+      'iOS real device -- appium:xcodeSigningId (default "iPhone Developer")',
+    )
+    .option(
+      '--allow-provisioning-device-registration',
+      'iOS real device -- appium:allowProvisioningDeviceRegistration ' +
+        '(let Xcode register the device with your provisioning profile)',
+    )
+    .option(
+      '--updated-wda-bundle-id <id>',
+      'iOS real device -- appium:updatedWDABundleId (custom WDA bundle id for signing)',
+    )
+    .option(
       '--port <port>',
       'preferred Appium port (default: 4723)',
       (v) => Number.parseInt(v, 10),
@@ -271,23 +292,43 @@ export function registerSessionStart(session: Command): void {
         );
       }
 
-      // On Android, Appium will not auto-boot an emulator unless we tell it
-      // which AVD to use (or the user has booted one and passes --udid).
-      // When neither is given, default to the first discoverable AVD so
-      // `session start --platform android` works out of the box.
+      // When no explicit target (--udid/--avd) is given, prefer a connected
+      // real device over spinning up a virtual one. Only when none is connected
+      // do we fall back to auto-booting the first AVD (Android) -- Appium will
+      // not auto-boot an emulator unless we tell it which AVD to use.
       let avd = opts.avd;
-      if (platform === 'android' && !avd && !opts.udid) {
-        const { devices } = await listAndroidAvds();
-        const first = devices[0];
-        if (!first) {
-          throw new Error(
-            'aco: no Android AVD found to boot. Create one in Android Studio, ' +
-              'or boot an emulator yourself and pass `--udid`. ' +
-              'See `aco device list --platform android`.',
+      let udid = opts.udid;
+      if (!udid && !avd) {
+        const realList =
+          platform === 'ios'
+            ? await listIosRealDevices()
+            : await listAndroidRealDevices();
+        const realDevice = realList.devices.find(
+          (d) => d.kind === 'real' && d.state === 'booted',
+        );
+        if (realDevice) {
+          udid = realDevice.id;
+          process.stderr.write(
+            `aco: no --udid/--avd given, targeting connected real device ${udid} ` +
+              `(${realDevice.name})\n`,
           );
+        } else if (platform === 'android') {
+          const { devices } = await listAndroidAvds();
+          const first = devices[0];
+          if (!first) {
+            throw new Error(
+              'aco: no connected Android device and no AVD found to boot. ' +
+                'Plug in a device (enable USB debugging), create an AVD in Android ' +
+                'Studio, or boot an emulator and pass `--udid`. ' +
+                'See `aco device list --platform android`.',
+            );
+          }
+          avd = first.name;
+          process.stderr.write(`aco: no --avd given, using "${avd}"\n`);
         }
-        avd = first.name;
-        process.stderr.write(`aco: no --avd given, using "${avd}"\n`);
+        // iOS with no real device and no flags: leave both unset. XCUITest will
+        // pick a default simulator (or error) as it does today -- we do not
+        // auto-pick a simulator here.
       }
 
       const capabilities = buildCapabilities({
@@ -296,8 +337,13 @@ export function registerSessionStart(session: Command): void {
         appActivity: opts.appActivity,
         deviceName: opts.deviceName,
         platformVersion: opts.platformVersion,
-        udid: opts.udid,
+        udid,
         avd,
+        xcodeOrgId: opts.xcodeOrgId,
+        xcodeSigningId: opts.xcodeSigningId,
+        allowProvisioningDeviceRegistration:
+          opts.allowProvisioningDeviceRegistration,
+        updatedWdaBundleId: opts.updatedWdaBundleId,
         extraCaps: parseExtraCaps(opts.cap),
       });
 
@@ -339,11 +385,27 @@ export function registerSessionStart(session: Command): void {
         const msg = err instanceof Error ? err.message : String(err);
         if (
           platform === 'android' &&
-          !opts.udid &&
+          !udid &&
           /Could not find a connected Android device/i.test(msg)
         ) {
           process.stderr.write(
             `aco: hint -- the AVD "${avd}" did not come up in time. Bump --session-timeout for a cold boot, pick another AVD with --avd <name> (see "aco device list --platform android"), or boot an emulator yourself before running "session start".\n`,
+          );
+        }
+        if (
+          platform === 'ios' &&
+          udid &&
+          !opts.xcodeOrgId &&
+          /(provisioning profile|code sign|xcodebuild|WebDriverAgent)/i.test(
+            msg,
+          )
+        ) {
+          process.stderr.write(
+            'aco: hint -- building WebDriverAgent on a real iOS device needs code ' +
+              'signing. Pass --xcode-org-id <TeamID> (and optionally ' +
+              '--xcode-signing-id / --allow-provisioning-device-registration / ' +
+              '--updated-wda-bundle-id), or open WebDriverAgent.xcodeproj in Xcode once ' +
+              'to configure signing.\n',
           );
         }
         throw err;
