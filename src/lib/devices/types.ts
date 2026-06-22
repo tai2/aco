@@ -12,6 +12,10 @@ export interface Device {
   state: DeviceState;
   platformVersion?: string;
   runtime?: string;
+  // Set only on a running Android emulator row (the AVD name from `adb devices
+  // -l`). Used by the index.ts merge to collapse the matching AVD `.ini`
+  // definition row; not rendered.
+  avdName?: string;
 }
 
 export interface ListResult {

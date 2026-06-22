@@ -22,8 +22,8 @@ export function registerDeviceList(device: Command): void {
   device
     .command('list')
     .description(
-      'list iOS Simulators (via `xcrun simctl`) and Android AVDs (via ' +
-        '~/.android/avd) that you can pass to `aco session start`',
+      'list iOS Simulators + connected iPhones/iPads and Android AVDs + ' +
+        'connected handsets/emulators that you can pass to `aco session start`',
     )
     .option(
       '-p, --platform <ios|android>',
@@ -80,8 +80,8 @@ export function registerDeviceList(device: Command): void {
 
       process.stdout.write(renderTable(filtered));
       process.stderr.write(
-        'tip: `aco session start --platform ios --udid <ID>` ' +
-          'or `--platform android --avd <NAME>`\n',
+        'tip: pass a row ID to `--udid` (real device or iOS simulator) ' +
+          'or a NAME to `--avd` (Android emulator)\n',
       );
     });
 }

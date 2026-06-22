@@ -8,6 +8,11 @@ export interface StartCapsInput {
   platformVersion?: string;
   udid?: string;
   avd?: string;
+  // iOS real-device code signing (XCUITest builds/installs WDA on-device):
+  xcodeOrgId?: string;
+  xcodeSigningId?: string;
+  allowProvisioningDeviceRegistration?: boolean;
+  updatedWdaBundleId?: string;
   extraCaps?: Record<string, unknown>;
 }
 
@@ -39,6 +44,26 @@ export function buildCapabilities(
     }
     base['appium:avd'] = input.avd;
   }
+
+  const signingProvided =
+    input.xcodeOrgId ||
+    input.xcodeSigningId ||
+    input.allowProvisioningDeviceRegistration ||
+    input.updatedWdaBundleId;
+  if (signingProvided && input.platform !== 'ios') {
+    throw new Error(
+      'Code-signing flags (--xcode-org-id, --xcode-signing-id, ' +
+        '--allow-provisioning-device-registration, --updated-wda-bundle-id) ' +
+        'are only valid for --platform ios.',
+    );
+  }
+  if (input.xcodeOrgId) base['appium:xcodeOrgId'] = input.xcodeOrgId;
+  if (input.xcodeSigningId)
+    base['appium:xcodeSigningId'] = input.xcodeSigningId;
+  if (input.allowProvisioningDeviceRegistration)
+    base['appium:allowProvisioningDeviceRegistration'] = true;
+  if (input.updatedWdaBundleId)
+    base['appium:updatedWDABundleId'] = input.updatedWdaBundleId;
 
   if (input.app) {
     const looksLikePath =
