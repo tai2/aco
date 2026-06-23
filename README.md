@@ -34,11 +34,9 @@ npx aco --help
 
 ### Discover devices
 
-List the iOS Simulators, Android AVDs, **and connected real devices** you can
-target. Pass a row's `NAME` to `session start --device-name` (iOS) or `--avd`
-(Android emulator), or its `ID` to `--udid` (real device or iOS simulator).
-Connected iPhones/iPads (over USB) and `adb`-visible Android handsets show up as
-`KIND = real`; running emulators show up by their `adb` serial.
+List iOS Simulators, Android AVDs, and connected real devices. Pass a row's
+`NAME` to `--device-name` (iOS) / `--avd` (Android emulator), or its `ID` to
+`--udid` (real device or simulator).
 
 ```sh
 aco device list                          # both platforms, only "available" rows
@@ -68,55 +66,28 @@ aco session start --detach --platform ios --app /tmp/MyApp.app
 # Forward extra Appium server flags
 aco session start --platform android --log-level debug --use-plugins images
 
-# Remote server / device farm (no local Appium is spawned; BASIC auth is sent
-# only on session creation). Credentials may also come from
-# ACO_REMOTE_USERNAME/ACO_REMOTE_PASSWORD.
+# Remote server / device farm: --server-url attaches to a running Appium
+# instead of spawning one. --auth sends BASIC auth (only on session creation;
+# or via ACO_REMOTE_USERNAME / ACO_REMOTE_PASSWORD).
 aco session start --platform android --server-url https://grid.example.com/wd/hub \
   --auth user:accessKey --cap deviceName="Pixel 8"
 
-# Device farm with vendor-specific nested caps (e.g. LambdaTest's "lt:options"):
-# feed the whole W3C capabilities object verbatim with --caps-json (or @file).
+# Device farm with vendor-specific nested caps (LambdaTest's "lt:options",
+# BrowserStack's "bstack:options", ...): pass the whole W3C caps object with
+# --caps-json (or --caps-json @file). Replaces the aco-built caps; --platform
+# is still required.
 aco session start --platform android \
   --server-url https://mobile-hub.lambdatest.com/wd/hub --auth user:accessKey \
   --caps-json '{"platformName":"android","lt:options":{"isRealMobile":true,"platformVersion":"13","deviceName":"Pixel 8","app":"lt://APP_ID"}}'
 ```
 
-When you pass neither `--udid` nor `--avd`, `session start` prefers a connected
-real device if one is present (announcing which device it picked on stderr), and
-only otherwise falls back to auto-booting the first Android AVD. Explicit
-`--udid`/`--avd` always win. iOS real devices additionally need code signing for
-the on-device WebDriverAgent build -- pass `--xcode-org-id` (and optionally
-`--xcode-signing-id`, `--allow-provisioning-device-registration`,
-`--updated-wda-bundle-id`).
-
-`session start` forwards a curated subset of Appium's server flags
-(`--base-path`, `--log-level`, `--address`, `--relaxed-security`,
-`--allow-cors`, `--allow-insecure`/`--deny-insecure`,
-`--use-drivers`/`--use-plugins`, the `*-timeout` knobs). Run
-`aco session start --help` for the full list. Pass `--log` to stream the Appium
-server log to stdout (omit it in scripts).
-
-Pass `--server-url <url>` to attach to an **already-running remote Appium
-server** (a device-farm grid such as LambdaTest/TestMu, BrowserStack, Sauce
-Labs, or a self-hosted server behind a reverse proxy) instead of spawning a
-local `appium`. In this mode `aco` does not launch a local server, returns
-immediately after the session is created (the session is reaped later by
-`aco session stop`), and the local-server flags above are ignored. Supply BASIC
-auth with `--username`/`--password`, the `--auth user:pass` shorthand, or the
-`ACO_REMOTE_USERNAME`/`ACO_REMOTE_PASSWORD` env vars — credentials are sent
-**only on session creation** (`POST /session`), never on subsequent commands,
-and are never written to the session record (which stores only the URL). The
-consumer commands then attach with the stored `--server-url` and need no auth.
-
-When a farm needs a vendor-specific capability shape that aco's per-flag caps
-can't express (LambdaTest's `lt:options`, BrowserStack's `bstack:options`,
-etc.), pass the entire W3C capabilities object verbatim with
-`--caps-json '<json>'` (or `--caps-json @caps.json` to read from a file). It
-replaces the aco-built capabilities entirely, so the per-device flags (`--app`,
-`--device-name`, `--udid`, ...) are ignored (aco warns if you pass them); any
-`--cap key=value` entries still shallow-merge on top. `--platform` is still
-required — it is recorded for the consumer commands' `mobile:` dispatch, not
-sent as a capability.
+- With neither `--udid` nor `--avd`, a connected real device wins; otherwise the
+  first Android AVD is auto-booted. Explicit `--udid`/`--avd` always win.
+- iOS real devices need `--xcode-org-id` (plus optional `--xcode-signing-id`,
+  `--allow-provisioning-device-registration`, `--updated-wda-bundle-id`).
+- `--log` streams the Appium log to stdout. `aco session start --help` lists the
+  forwarded server flags (`--log-level`, `--relaxed-security`, the `*-timeout`
+  knobs, ...).
 
 ### Drive the session
 
