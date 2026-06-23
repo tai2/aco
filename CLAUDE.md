@@ -10,7 +10,24 @@
    Android AVD. iOS real devices take code-signing flags (`--xcode-org-id`,
    `--xcode-signing-id`, `--allow-provisioning-device-registration`,
    `--updated-wda-bundle-id`) that map to the corresponding `appium:*` caps.
-   `aco session list` and `aco session stop` inspect/tear down stored sessions.
+   Pass `--server-url <url>` to attach to an **already-running remote Appium
+   server** (a device-farm grid such as TestMu/LambdaTest, BrowserStack, or
+   Sauce Labs) instead of spawning a local one -- in that mode no local `appium`
+   is launched, the local-server flags are ignored, the record stores `pid: 0`,
+   and the command exits immediately (like `--detach`) since there is no local
+   process to own. BASIC auth (`--username`/`--password`, the `--auth user:pass`
+   shorthand, or `ACO_REMOTE_USERNAME`/`ACO_REMOTE_PASSWORD`) is forwarded via
+   WebdriverIO's `user`/`key`, which attaches `Authorization: Basic` **only to
+   the `POST /session` request** -- matching the verified device-farm contract
+   that only session creation needs auth -- and is never written to the session
+   record. For farms whose capability shape aco's per-flag caps can't express
+   (LambdaTest's `lt:options`, BrowserStack's `bstack:options`, ...), pass the
+   entire W3C capabilities object verbatim with `--caps-json '<json>'` (or
+   `--caps-json @file`): it bypasses `buildCapabilities` entirely (the per-device
+   flags and the device auto-detection step are skipped), with any `--cap`
+   entries shallow-merged on top. `aco session list` and `aco session stop`
+   inspect/tear down stored sessions (a remote `pid: 0` record is torn down by
+   `deleteSession` alone).
 2. Everything else (`aco source`, `aco screenshot`, `aco element ...`,
    `aco tap`, `aco swipe`, `aco context ...`, `aco ios ...`, `aco android ...`,
    `aco mobile call`) -- attaches to
