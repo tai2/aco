@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { createWriteStream, mkdirSync } from 'node:fs';
+import { createWriteStream, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Command } from '@commander-js/extra-typings';
@@ -39,6 +39,68 @@ function parseExtraCaps(values: string[] | undefined): Record<string, unknown> {
     }
   }
   return out;
+}
+
+export function parseCapsJson(value: string): Record<string, unknown> {
+  let raw = value;
+  if (value.startsWith('@')) {
+    const path = value.slice(1);
+    try {
+      raw = readFileSync(path, 'utf8');
+    } catch (err) {
+      throw new Error(
+        `--caps-json: cannot read file ${path}: ${(err as Error).message}`,
+      );
+    }
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`--caps-json is not valid JSON: ${(err as Error).message}`);
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(
+      '--caps-json must be a JSON object (the W3C capabilities map)',
+    );
+  }
+  return parsed as Record<string, unknown>;
+}
+
+export function resolveAuth(opts: {
+  username?: string;
+  password?: string;
+  auth?: string;
+}): { user?: string; key?: string } {
+  if (opts.auth !== undefined) {
+    if (opts.username !== undefined || opts.password !== undefined) {
+      throw new Error('--auth cannot be combined with --username/--password');
+    }
+    const idx = opts.auth.indexOf(':');
+    if (idx < 0) {
+      throw new Error('--auth expects "user:password"');
+    }
+    return { user: opts.auth.slice(0, idx), key: opts.auth.slice(idx + 1) };
+  }
+  if (opts.username !== undefined || opts.password !== undefined) {
+    if (opts.username === undefined || opts.password === undefined) {
+      throw new Error('--username and --password must be given together');
+    }
+    return { user: opts.username, key: opts.password };
+  }
+  // Fallback to env vars so credentials need not appear in shell history /
+  // process args. Flags above always win.
+  const envUser = process.env.ACO_REMOTE_USERNAME;
+  const envKey = process.env.ACO_REMOTE_PASSWORD;
+  if (envUser !== undefined || envKey !== undefined) {
+    if (envUser === undefined || envKey === undefined) {
+      throw new Error(
+        'ACO_REMOTE_USERNAME and ACO_REMOTE_PASSWORD must be set together',
+      );
+    }
+    return { user: envUser, key: envKey };
+  }
+  return {};
 }
 
 function readFirstLine(
@@ -206,7 +268,34 @@ export function registerSessionStart(session: Command): void {
       (v) => Number.parseInt(v, 10),
       4723,
     )
+    .option(
+      '-S, --server-url <url>',
+      'attach to an existing remote Appium server (e.g. a device farm grid) ' +
+        'instead of spawning a local one. When set, --port and the local ' +
+        'server flags (--address, --log-level, --use-drivers, ...) are ignored.',
+    )
+    .option(
+      '--username <user>',
+      'BASIC auth username for the remote server (sent only on session creation)',
+    )
+    .option(
+      '--password <pass>',
+      'BASIC auth password for the remote server (sent only on session creation)',
+    )
+    .option(
+      '--auth <user:pass>',
+      'BASIC auth as "user:password" (alternative to --username/--password; ' +
+        'value before the first ":" is the user)',
+    )
     .option('--cap <key=value...>', 'extra W3C capability (repeatable)')
+    .option(
+      '--caps-json <json>',
+      'verbatim W3C capabilities as a JSON object (or @file to read from a ' +
+        'file), bypassing aco-built caps. Escape hatch for device farms with ' +
+        'nested vendor caps (e.g. LambdaTest\'s "lt:options"). Per-device flags ' +
+        '(--app, --device-name, --udid, ...) are ignored; --cap entries still ' +
+        'merge on top (shallow). --platform is still required for the record.',
+    )
     .option(
       '--allow-insecure <feature...>',
       'Appium insecure feature(s) to enable on the server. Appium 3 requires ' +
@@ -280,7 +369,9 @@ export function registerSessionStart(session: Command): void {
       'run in the background; print envelope on stdout then exit immediately',
     )
     .action(async (opts) => {
-      if (opts.detach) {
+      // Remote mode owns no local process, so it already behaves like --detach
+      // (create session, print envelope, exit). Skip the re-exec path for it.
+      if (opts.detach && !opts.serverUrl) {
         await detachAndExit(opts.sessionTimeout);
         return;
       }
@@ -296,9 +387,11 @@ export function registerSessionStart(session: Command): void {
       // real device over spinning up a virtual one. Only when none is connected
       // do we fall back to auto-booting the first AVD (Android) -- Appium will
       // not auto-boot an emulator unless we tell it which AVD to use.
+      // Skipped entirely with --caps-json: the user supplies the full caps, so
+      // there is no aco-built target to auto-detect.
       let avd = opts.avd;
       let udid = opts.udid;
-      if (!udid && !avd) {
+      if (!opts.capsJson && !udid && !avd) {
         const realList =
           platform === 'ios'
             ? await listIosRealDevices()
@@ -331,56 +424,171 @@ export function registerSessionStart(session: Command): void {
         // auto-pick a simulator here.
       }
 
-      const capabilities = buildCapabilities({
-        platform,
-        app: opts.app,
-        appActivity: opts.appActivity,
-        deviceName: opts.deviceName,
-        platformVersion: opts.platformVersion,
-        udid,
-        avd,
-        xcodeOrgId: opts.xcodeOrgId,
-        xcodeSigningId: opts.xcodeSigningId,
-        allowProvisioningDeviceRegistration:
-          opts.allowProvisioningDeviceRegistration,
-        updatedWdaBundleId: opts.updatedWdaBundleId,
-        extraCaps: parseExtraCaps(opts.cap),
-      });
+      let capabilities: Record<string, unknown>;
+      if (opts.capsJson) {
+        // Escape hatch: use the supplied JSON verbatim as the capabilities map,
+        // with --cap entries shallow-merged on top. aco's per-device caps are
+        // not built, so the per-device flags below have no effect -- warn so a
+        // stale flag in a script does not read as "applied".
+        const ignored = [
+          opts.app !== undefined ? '--app' : undefined,
+          opts.appActivity !== undefined ? '--app-activity' : undefined,
+          opts.deviceName !== undefined ? '--device-name' : undefined,
+          opts.platformVersion !== undefined ? '--platform-version' : undefined,
+          opts.udid !== undefined ? '--udid' : undefined,
+          opts.avd !== undefined ? '--avd' : undefined,
+          opts.xcodeOrgId !== undefined ? '--xcode-org-id' : undefined,
+          opts.xcodeSigningId !== undefined ? '--xcode-signing-id' : undefined,
+          opts.allowProvisioningDeviceRegistration
+            ? '--allow-provisioning-device-registration'
+            : undefined,
+          opts.updatedWdaBundleId !== undefined
+            ? '--updated-wda-bundle-id'
+            : undefined,
+        ].filter((f): f is string => f !== undefined);
+        if (ignored.length > 0) {
+          process.stderr.write(
+            `aco: warning -- ignoring per-device flags with --caps-json: ${ignored.join(', ')}\n`,
+          );
+        }
+        capabilities = {
+          ...parseCapsJson(opts.capsJson),
+          ...parseExtraCaps(opts.cap),
+        };
+      } else {
+        capabilities = buildCapabilities({
+          platform,
+          app: opts.app,
+          appActivity: opts.appActivity,
+          deviceName: opts.deviceName,
+          platformVersion: opts.platformVersion,
+          udid,
+          avd,
+          xcodeOrgId: opts.xcodeOrgId,
+          xcodeSigningId: opts.xcodeSigningId,
+          allowProvisioningDeviceRegistration:
+            opts.allowProvisioningDeviceRegistration,
+          updatedWdaBundleId: opts.updatedWdaBundleId,
+          extraCaps: parseExtraCaps(opts.cap),
+        });
+      }
 
-      const port = await pickFreePort(opts.port);
-      const server = await startAppiumServer({
-        port,
-        tee: Boolean(opts.log),
-        // --address forwards to the existing internal `hostname` option, which
-        // keeps its 127.0.0.1 default when --address is omitted.
-        hostname: opts.address,
-        allowInsecure: opts.allowInsecure,
-        denyInsecure: opts.denyInsecure,
-        relaxedSecurity: opts.relaxedSecurity,
-        allowCors: opts.allowCors,
-        basePath: opts.basePath,
-        logLevel: opts.logLevel,
-        useDrivers: opts.useDrivers,
-        usePlugins: opts.usePlugins,
-        keepAliveTimeout: opts.keepAliveTimeout,
-        requestTimeout: opts.requestTimeout,
-        shutdownTimeout: opts.shutdownTimeout,
-      });
+      const auth = resolveAuth(opts);
+
+      // Resolve the connection target. Reuse the same URL parsing as
+      // parseConnection for the remote case so https/port/base-path are handled
+      // identically to the consumer commands.
+      let conn: {
+        hostname: string;
+        port: number;
+        basePath: string;
+        protocol: 'http' | 'https';
+        serverUrl: string;
+      };
+      let server: Awaited<ReturnType<typeof startAppiumServer>> | undefined;
+
+      if (opts.serverUrl) {
+        // REMOTE: do not spawn appium.
+        let url: URL;
+        try {
+          url = new URL(opts.serverUrl);
+        } catch {
+          throw new Error(`--server-url is not a valid URL: ${opts.serverUrl}`);
+        }
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+          throw new Error(`--server-url must use http(s); got ${url.protocol}`);
+        }
+        const basePath =
+          url.pathname && url.pathname !== '/' ? url.pathname : '/';
+        const baseSuffix = basePath.replace(/\/+$/, '');
+        const protocol = url.protocol === 'https:' ? 'https' : 'http';
+        conn = {
+          hostname: url.hostname,
+          port:
+            Number.parseInt(url.port, 10) || (protocol === 'https' ? 443 : 80),
+          basePath,
+          protocol,
+          // Canonical URL stored in the record; consumers parse it back. No creds.
+          serverUrl: `${protocol}://${url.host}${baseSuffix}`,
+        };
+
+        const ignoredFlags = [
+          opts.address !== undefined ? '--address' : undefined,
+          opts.logLevel !== undefined ? '--log-level' : undefined,
+          opts.useDrivers !== undefined ? '--use-drivers' : undefined,
+          opts.usePlugins !== undefined ? '--use-plugins' : undefined,
+          opts.keepAliveTimeout !== undefined
+            ? '--keep-alive-timeout'
+            : undefined,
+          opts.requestTimeout !== undefined ? '--request-timeout' : undefined,
+          opts.shutdownTimeout !== undefined ? '--shutdown-timeout' : undefined,
+          opts.basePath !== undefined ? '--base-path' : undefined,
+          opts.allowInsecure !== undefined ? '--allow-insecure' : undefined,
+          opts.denyInsecure !== undefined ? '--deny-insecure' : undefined,
+          opts.relaxedSecurity ? '--relaxed-security' : undefined,
+          opts.allowCors ? '--allow-cors' : undefined,
+          opts.log ? '--log' : undefined,
+        ].filter((f): f is string => f !== undefined);
+        if (ignoredFlags.length > 0) {
+          process.stderr.write(
+            `aco: warning -- ignoring local-server flags with --server-url: ${ignoredFlags.join(', ')}\n`,
+          );
+        }
+        if (opts.detach) {
+          process.stderr.write(
+            'aco: --detach is a no-op with --server-url (remote sessions ' +
+              'already exit immediately after creation)\n',
+          );
+        }
+      } else {
+        // LOCAL (unchanged):
+        const port = await pickFreePort(opts.port);
+        server = await startAppiumServer({
+          port,
+          tee: Boolean(opts.log),
+          // --address forwards to the existing internal `hostname` option, which
+          // keeps its 127.0.0.1 default when --address is omitted.
+          hostname: opts.address,
+          allowInsecure: opts.allowInsecure,
+          denyInsecure: opts.denyInsecure,
+          relaxedSecurity: opts.relaxedSecurity,
+          allowCors: opts.allowCors,
+          basePath: opts.basePath,
+          logLevel: opts.logLevel,
+          useDrivers: opts.useDrivers,
+          usePlugins: opts.usePlugins,
+          keepAliveTimeout: opts.keepAliveTimeout,
+          requestTimeout: opts.requestTimeout,
+          shutdownTimeout: opts.shutdownTimeout,
+        });
+        conn = {
+          hostname: server.hostname,
+          port: server.port,
+          basePath: server.basePath,
+          protocol: 'http',
+          serverUrl: server.serverUrl,
+        };
+      }
 
       let browser: WebdriverIO.Browser;
       try {
         browser = await createBrowser({
-          hostname: server.hostname,
-          port: server.port,
-          basePath: server.basePath,
+          hostname: conn.hostname,
+          port: conn.port,
+          basePath: conn.basePath,
+          protocol: conn.protocol,
+          user: auth.user,
+          key: auth.key,
           capabilities,
           connectionTimeoutMs: opts.sessionTimeout * 1000,
         });
       } catch (err) {
-        try {
-          process.kill(server.pid, 'SIGTERM');
-        } catch {
-          /* ignore */
+        if (server) {
+          try {
+            process.kill(server.pid, 'SIGTERM');
+          } catch {
+            /* ignore */
+          }
         }
         const msg = err instanceof Error ? err.message : String(err);
         if (
@@ -413,9 +621,10 @@ export function registerSessionStart(session: Command): void {
 
       const record: SessionRecord = {
         sessionId: browser.sessionId,
-        serverUrl: server.serverUrl,
+        serverUrl: conn.serverUrl,
         platform,
-        pid: server.pid,
+        // 0 => no local child; stop.ts/list.ts already treat this as "remote".
+        pid: server?.pid ?? 0,
         startedAt: new Date().toISOString(),
         deviceName: opts.deviceName,
         app: opts.app,
@@ -430,6 +639,17 @@ export function registerSessionStart(session: Command): void {
           pid: record.pid,
         })}\n`,
       );
+
+      if (!server) {
+        // REMOTE: nothing local to babysit. The session lives on the farm; we
+        // exit cleanly and let `aco <command>` attach and `aco session stop`
+        // tear it down.
+        process.stderr.write(
+          'session created on remote server -- stop it with `aco session stop`\n',
+        );
+        return;
+      }
+
       process.stderr.write('session ready -- press Ctrl-C to stop\n');
 
       let cleaningUp = false;

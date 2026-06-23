@@ -26,6 +26,14 @@ export interface CreateBrowserOptions {
   basePath: string;
   capabilities: Record<string, unknown>;
   connectionTimeoutMs?: number;
+  // Remote-server support:
+  protocol?: 'http' | 'https'; // defaults to 'http'
+  // BASIC auth -- webdriver's transport (webdriver@9.27.2 build/node.js ~line
+  // 2147) attaches `Authorization: Basic base64(user:key)` ONLY to the
+  // `POST /session` request, never to subsequent commands. This matches the
+  // device-farm contract where only session creation requires auth.
+  user?: string;
+  key?: string;
 }
 
 export async function createBrowser(
@@ -35,11 +43,14 @@ export async function createBrowser(
     hostname: opts.hostname,
     port: opts.port,
     path: opts.basePath,
-    protocol: 'http',
+    protocol: opts.protocol ?? 'http',
     logLevel: 'silent',
     connectionRetryTimeout:
       opts.connectionTimeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS,
     connectionRetryCount: 0,
+    // Only forwarded when set; undefined user/key means no auth header.
+    ...(opts.user !== undefined ? { user: opts.user } : {}),
+    ...(opts.key !== undefined ? { key: opts.key } : {}),
     capabilities: opts.capabilities as WebdriverIO.Capabilities,
   });
 }

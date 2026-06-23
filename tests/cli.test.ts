@@ -14,6 +14,7 @@ import { dirname, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { parseCapsJson, resolveAuth } from '../src/commands/session/start.js';
 import { startAppiumServer } from '../src/lib/appium-server.js';
 import { parseConnection, resolveConnection } from '../src/lib/connection.js';
 import { listAndroidAvds } from '../src/lib/devices/android.js';
@@ -344,6 +345,16 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('--keep-alive-timeout');
     expect(result.stdout).toContain('--request-timeout');
     expect(result.stdout).toContain('--shutdown-timeout');
+  });
+
+  it('aco session start --help documents the remote-server and auth flags', () => {
+    const result = runCli(['session', 'start', '--help']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('--server-url');
+    expect(result.stdout).toContain('--username');
+    expect(result.stdout).toContain('--password');
+    expect(result.stdout).toContain('--auth');
+    expect(result.stdout).toContain('--caps-json');
   });
 
   // NOTE: `aco session start --detach` is not covered by automated tests in
@@ -867,6 +878,343 @@ describe('startAppiumServer cleanup', () => {
       process.env.PATH = savedPath;
       process.env.HOME = savedHome;
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('resolveAuth', () => {
+  it('splits --auth "user:pass" on the first colon', () => {
+    expect(resolveAuth({ auth: 'alice:s3cr3t:with:colons' })).toEqual({
+      user: 'alice',
+      key: 's3cr3t:with:colons',
+    });
+  });
+
+  it('throws when --auth has no colon', () => {
+    expect(() => resolveAuth({ auth: 'nocolon' })).toThrow(
+      /--auth expects "user:password"/,
+    );
+  });
+
+  it('throws when --auth is combined with --username', () => {
+    expect(() => resolveAuth({ auth: 'a:b', username: 'c' })).toThrow(
+      /--auth cannot be combined with --username\/--password/,
+    );
+  });
+
+  it('throws when --username is given without --password', () => {
+    expect(() => resolveAuth({ username: 'alice' })).toThrow(
+      /--username and --password must be given together/,
+    );
+  });
+
+  it('returns {} when no credentials are supplied', () => {
+    withRemoteAuthEnv({ user: undefined, key: undefined }, () => {
+      expect(resolveAuth({})).toEqual({});
+    });
+  });
+
+  it('falls back to ACO_REMOTE_* env vars, but flags win', () => {
+    withRemoteAuthEnv({ user: 'envuser', key: 'envpass' }, () => {
+      expect(resolveAuth({})).toEqual({ user: 'envuser', key: 'envpass' });
+      // Flags take precedence over the env fallback.
+      expect(resolveAuth({ auth: 'flaguser:flagpass' })).toEqual({
+        user: 'flaguser',
+        key: 'flagpass',
+      });
+    });
+  });
+});
+
+describe('parseCapsJson', () => {
+  it('parses an inline JSON object, preserving nested vendor caps', () => {
+    const caps = parseCapsJson(
+      '{"platformName":"android","lt:options":{"isRealMobile":true,"deviceName":"Pixel 8"}}',
+    );
+    expect(caps).toEqual({
+      platformName: 'android',
+      'lt:options': { isRealMobile: true, deviceName: 'Pixel 8' },
+    });
+  });
+
+  it('reads JSON from an @file path', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'aco-caps-'));
+    const file = join(dir, 'caps.json');
+    writeFileSync(file, '{"lt:options":{"build":"smoke"}}');
+    try {
+      expect(parseCapsJson(`@${file}`)).toEqual({
+        'lt:options': { build: 'smoke' },
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('throws a clear error for an @file that does not exist', () => {
+    expect(() => parseCapsJson('@/no/such/caps.json')).toThrow(
+      /--caps-json: cannot read file/,
+    );
+  });
+
+  it('throws when the JSON is malformed', () => {
+    expect(() => parseCapsJson('{not json}')).toThrow(
+      /--caps-json is not valid JSON/,
+    );
+  });
+
+  it('throws when the JSON is not an object (array)', () => {
+    expect(() => parseCapsJson('[1,2,3]')).toThrow(
+      /--caps-json must be a JSON object/,
+    );
+  });
+
+  it('throws when the JSON is not an object (primitive)', () => {
+    expect(() => parseCapsJson('"oops"')).toThrow(
+      /--caps-json must be a JSON object/,
+    );
+  });
+});
+
+// Run `fn` with ACO_REMOTE_USERNAME/PASSWORD set to the given values (undefined
+// => unset), restoring the prior environment afterwards.
+function withRemoteAuthEnv(
+  values: { user: string | undefined; key: string | undefined },
+  fn: () => void,
+): void {
+  const setOrUnset = (name: string, value: string | undefined) => {
+    if (value === undefined) Reflect.deleteProperty(process.env, name);
+    else process.env[name] = value;
+  };
+  const saved = {
+    user: process.env.ACO_REMOTE_USERNAME,
+    key: process.env.ACO_REMOTE_PASSWORD,
+  };
+  setOrUnset('ACO_REMOTE_USERNAME', values.user);
+  setOrUnset('ACO_REMOTE_PASSWORD', values.key);
+  try {
+    fn();
+  } finally {
+    setOrUnset('ACO_REMOTE_USERNAME', saved.user);
+    setOrUnset('ACO_REMOTE_PASSWORD', saved.key);
+  }
+}
+
+// A stub Appium server that records each request (method/url/auth) as a JSON
+// line to a log file and answers POST /session + GET /source. It must run in a
+// SEPARATE process: runCli uses spawnSync, which blocks this process's event
+// loop, so an in-process server could never answer the CLI's requests.
+const STUB_SERVER_SOURCE = [
+  'const http = require("node:http");',
+  'const fs = require("node:fs");',
+  'const [, , logFile, portFile] = process.argv;',
+  'const server = http.createServer((req, res) => {',
+  '  let body = "";',
+  '  req.on("data", (c) => { body += c; });',
+  '  req.on("end", () => {',
+  '    fs.appendFileSync(logFile, JSON.stringify({ method: req.method, url: req.url, auth: req.headers.authorization ?? null, body: body }) + "\\n");',
+  '    const url = req.url || "";',
+  '    if (req.method === "POST" && url.endsWith("/session")) {',
+  '      res.writeHead(200, { "content-type": "application/json" });',
+  '      res.end(JSON.stringify({ value: { sessionId: "remote-sess-1", capabilities: { platformName: "iOS" } } }));',
+  '      return;',
+  '    }',
+  '    if (req.method === "GET" && url.endsWith("/source")) {',
+  '      res.writeHead(200, { "content-type": "application/json" });',
+  '      res.end(JSON.stringify({ value: "<AppiumAUT/>" }));',
+  '      return;',
+  '    }',
+  '    res.writeHead(404, { "content-type": "application/json" });',
+  '    res.end("{}");',
+  '  });',
+  '});',
+  'server.listen(0, "127.0.0.1", () => {',
+  '  fs.writeFileSync(portFile, String(server.address().port));',
+  '});',
+  '',
+].join('\n');
+
+describe('remote server mode (--server-url)', () => {
+  // session start (remote mode) must (a) send BASIC auth only on POST /session,
+  // (b) never spawn a local `appium`, and a follow-up consumer command must
+  // send no auth at all.
+  it('sends BASIC auth only on session creation and spawns no local appium', async () => {
+    const home = makeTmpHome();
+    const binDir = join(home, 'bin');
+    mkdirSync(binDir, { recursive: true });
+
+    const stubPath = join(home, 'stub-appium.cjs');
+    writeFileSync(stubPath, STUB_SERVER_SOURCE);
+    const logFile = join(home, 'requests.log');
+    const portFile = join(home, 'port');
+
+    // A fake `appium` that records if it was ever invoked. Remote mode must not
+    // spawn it, so this marker must never appear.
+    const marker = join(home, 'appium-was-spawned');
+    const fakeAppium = join(binDir, 'appium');
+    writeFileSync(fakeAppium, `#!/bin/sh\ntouch ${JSON.stringify(marker)}\n`, {
+      mode: 0o755,
+    });
+    chmodSync(fakeAppium, 0o755);
+
+    const stub = spawn('node', [stubPath, logFile, portFile], {
+      stdio: 'ignore',
+    });
+    try {
+      // Wait for the stub to bind and publish its port.
+      const deadline = Date.now() + 5000;
+      while (!existsSync(portFile) && Date.now() < deadline) {
+        await delay(25);
+      }
+      const port = Number.parseInt(readFileSync(portFile, 'utf8'), 10);
+      expect(Number.isFinite(port)).toBe(true);
+      const serverUrl = `http://127.0.0.1:${port}`;
+
+      const env = { HOME: home, PATH: `${binDir}:${process.env.PATH ?? ''}` };
+
+      const start = runCli(
+        [
+          'session',
+          'start',
+          '--platform',
+          'ios',
+          '--server-url',
+          serverUrl,
+          '--auth',
+          'user:pass',
+          '--session-timeout',
+          '20',
+        ],
+        env,
+      );
+      expect(start.status).toBe(0);
+      const envelope = JSON.parse(start.stdout.trim()) as {
+        sessionId: string;
+        pid: number;
+        serverUrl: string;
+      };
+      expect(envelope.sessionId).toBe('remote-sess-1');
+      expect(envelope.pid).toBe(0);
+      expect(envelope.serverUrl).toBe(serverUrl);
+
+      // No local appium child was spawned.
+      expect(existsSync(marker)).toBe(false);
+
+      // A follow-up in-session command attaches with no auth.
+      const source = runCli(
+        [
+          'source',
+          '--session',
+          'remote-sess-1',
+          '--server-url',
+          serverUrl,
+          '--platform',
+          'ios',
+        ],
+        env,
+      );
+      expect(source.status).toBe(0);
+
+      type Seen = { method?: string; url?: string; auth: string | null };
+      const requests = readFileSync(logFile, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as Seen);
+
+      const sessionReq = requests.find(
+        (r) => r.method === 'POST' && (r.url ?? '').endsWith('/session'),
+      );
+      expect(sessionReq).toBeDefined();
+      const expectedAuth = `Basic ${Buffer.from('user:pass').toString('base64')}`;
+      expect(sessionReq?.auth).toBe(expectedAuth);
+
+      const sourceReq = requests.find((r) => (r.url ?? '').endsWith('/source'));
+      expect(sourceReq).toBeDefined();
+      expect(sourceReq?.auth).toBe(null);
+    } finally {
+      stub.kill('SIGKILL');
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  // --caps-json is the device-farm escape hatch: the supplied object is sent on
+  // POST /session verbatim (nested vendor caps intact), and aco's per-flag caps
+  // (e.g. appium:newCommandTimeout) are NOT injected.
+  it('sends --caps-json verbatim and bypasses aco-built capabilities', async () => {
+    const home = makeTmpHome();
+    const stubPath = join(home, 'stub-appium.cjs');
+    writeFileSync(stubPath, STUB_SERVER_SOURCE);
+    const logFile = join(home, 'requests.log');
+    const portFile = join(home, 'port');
+
+    const stub = spawn('node', [stubPath, logFile, portFile], {
+      stdio: 'ignore',
+    });
+    try {
+      const deadline = Date.now() + 5000;
+      while (!existsSync(portFile) && Date.now() < deadline) {
+        await delay(25);
+      }
+      const port = Number.parseInt(readFileSync(portFile, 'utf8'), 10);
+      const serverUrl = `http://127.0.0.1:${port}`;
+      const env = { HOME: home, PATH: process.env.PATH ?? '' };
+
+      const capsJson = JSON.stringify({
+        platformName: 'android',
+        'lt:options': { isRealMobile: true, deviceName: 'Pixel 8' },
+      });
+
+      const start = runCli(
+        [
+          'session',
+          'start',
+          '--platform',
+          'android',
+          '--server-url',
+          serverUrl,
+          '--caps-json',
+          capsJson,
+          // A per-device flag that must be ignored (and warned about).
+          '--device-name',
+          'ignored',
+          // A --cap override that must shallow-merge on top.
+          '--cap',
+          'lt:options={"isRealMobile":true,"deviceName":"Pixel 8","build":"smoke"}',
+          '--session-timeout',
+          '20',
+        ],
+        env,
+      );
+      expect(start.status).toBe(0);
+      expect(start.stderr).toContain('ignoring per-device flags');
+      expect(start.stderr).toContain('--device-name');
+
+      type Seen = { method?: string; url?: string; body?: string };
+      const requests = readFileSync(logFile, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as Seen);
+      const sessionReq = requests.find(
+        (r) => r.method === 'POST' && (r.url ?? '').endsWith('/session'),
+      );
+      expect(sessionReq).toBeDefined();
+      const sent = JSON.parse(sessionReq?.body ?? '{}') as {
+        capabilities: { alwaysMatch: Record<string, unknown> };
+      };
+      const always = sent.capabilities.alwaysMatch;
+      // Vendor caps preserved verbatim, with the --cap override merged on top.
+      expect(always['lt:options']).toEqual({
+        isRealMobile: true,
+        deviceName: 'Pixel 8',
+        build: 'smoke',
+      });
+      expect(always.platformName).toBe('android');
+      // aco's per-flag caps were NOT injected.
+      expect(always['appium:newCommandTimeout']).toBeUndefined();
+      expect(always['appium:automationName']).toBeUndefined();
+      expect(always['appium:deviceName']).toBeUndefined();
+    } finally {
+      stub.kill('SIGKILL');
+      rmSync(home, { recursive: true, force: true });
     }
   });
 });
