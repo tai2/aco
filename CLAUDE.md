@@ -1,5 +1,17 @@
 # aco -- Notes for Claude Code
 
+## Documentation style: README vs. CLAUDE.md
+
+`README.md` is for **users** and is **usage-first**. Keep it concise: lead with
+runnable commands and short, scannable examples. Each section should be mostly
+code blocks with brief one-line framing. Avoid long prose paragraphs that
+explain *how* or *why* a feature works internally (auth wiring, capability
+merge order, resolution fallbacks, process lifecycle, etc.) -- prefer an inline
+`# comment` in the example or a single short sentence. If you find yourself
+writing a multi-sentence paragraph of mechanics, it belongs here in `CLAUDE.md`,
+not in the README. When you add behavior, document the *rationale and internals*
+in `CLAUDE.md` and only the *how-to-use* in the README.
+
 `aco` is a CLI on top of Appium. Two command classes:
 
 1. `aco session start` -- spawns the user's `appium` (from `PATH`) and creates a
