@@ -39,9 +39,9 @@ jobs:
       - name: Install deps (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
-      - name: Verify (lint/format/typecheck/test/build)
-        run: pnpm run verify
-
+      # No explicit verify step: `pnpm publish` runs the `prepublishOnly`
+      # hook (= `pnpm run verify`) below, so verifying here would run the
+      # full lint/format/typecheck/test/build suite twice in one job.
       - name: Guard — tag matches package.json version
         run: |
           tag="${GITHUB_REF_NAME#v}"
