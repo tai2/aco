@@ -31,6 +31,18 @@ npm i -g @tai2/aco
 npx @tai2/aco --help
 ```
 
+## Use with Claude Code
+
+Install the `aco` plugin so Claude Code can drive sessions for you:
+
+```sh
+claude plugin marketplace add tai2/aco
+claude plugin install aco@aco
+```
+
+Then ask your agent things like "tap the login button on the simulator" or
+"screenshot the current screen" — it shells out to `aco`.
+
 ## Usage
 
 ### Discover devices

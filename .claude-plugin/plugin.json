@@ -1,0 +1,20 @@
+{
+  "name": "aco",
+  "version": "0.1.0",
+  "description": "Drive a live Appium session from Claude Code with the aco CLI — start/stop sessions, find elements, tap, swipe, type, screenshot, read page source, switch web contexts, and call platform mobile: extensions on iOS simulators/emulators and real devices.",
+  "author": {
+    "name": "tai2"
+  },
+  "homepage": "https://github.com/tai2/aco#readme",
+  "repository": "https://github.com/tai2/aco",
+  "license": "MIT",
+  "keywords": [
+    "appium",
+    "mobile",
+    "ios",
+    "android",
+    "automation",
+    "e2e",
+    "webdriver"
+  ]
+}
