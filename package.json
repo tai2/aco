@@ -1,14 +1,38 @@
 {
-  "name": "aco",
-  "version": "0.0.0",
-  "description": "aco — TypeScript CLI scaffold (subcommand-capable).",
+  "name": "@tai2/aco",
+  "version": "0.1.0",
+  "description": "Appium Command-line Operator — drive an Appium session from the shell, one command at a time.",
   "type": "module",
+  "license": "MIT",
+  "author": "tai2",
+  "homepage": "https://github.com/tai2/aco#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tai2/aco.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tai2/aco/issues"
+  },
+  "keywords": [
+    "appium",
+    "cli",
+    "mobile",
+    "ios",
+    "android",
+    "webdriver",
+    "automation",
+    "e2e"
+  ],
   "bin": {
     "aco": "./dist/cli.js"
   },
   "files": ["dist"],
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "packageManager": "pnpm@10.33.4",
   "scripts": {
@@ -33,7 +57,10 @@
     "aut:build:ios": "pnpm --dir aut run build:ios",
     "aut:build:android": "pnpm --dir aut run build:android",
     "gen:extensions": "node --import tsx/esm scripts/generate-extensions.ts",
-    "prepublishOnly": "pnpm run verify"
+    "prepublishOnly": "pnpm run verify",
+    "release:patch": "npm version patch -m \"Release %s\" && git push --follow-tags",
+    "release:minor": "npm version minor -m \"Release %s\" && git push --follow-tags",
+    "release:major": "npm version major -m \"Release %s\" && git push --follow-tags"
   },
   "dependencies": {
     "@appium/logger": "^2.0.8",

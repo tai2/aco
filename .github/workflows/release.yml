@@ -1,0 +1,61 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# OIDC trusted publishing needs id-token: write.
+# contents: write lets the final step create the GitHub Release.
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish @tai2/aco
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install deps (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify (lint/format/typecheck/test/build)
+        run: pnpm run verify
+
+      - name: Guard — tag matches package.json version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag != package.json $pkg"
+            exit 1
+          fi
+          echo "Publishing version $pkg"
+
+      - name: Publish to npm (OIDC trusted publishing + provenance)
+        run: pnpm publish --access public --no-git-checks
+
+      - name: Create GitHub Release with PR-title notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" --generate-notes --verify-tag

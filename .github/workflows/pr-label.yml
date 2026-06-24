@@ -1,0 +1,17 @@
+name: pr-label
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+
+jobs:
+  require-label:
+    name: require a release-note label
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check for a recognized release-note label
+        uses: docker://agilepathway/pull-request-label-checker:latest
+        with:
+          one_of: feature,enhancement,bug,fix,documentation,chore,ci,refactor
+          repo_token: ${{ secrets.GITHUB_TOKEN }}

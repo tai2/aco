@@ -1,6 +1,7 @@
 # aco -- Appium Command-line Operator
 
 [![ci](https://github.com/tai2/aco/actions/workflows/ci.yml/badge.svg)](https://github.com/tai2/aco/actions/workflows/ci.yml)
+![npm](https://img.shields.io/npm/v/@tai2/aco)
 
 Drive an Appium session from the shell. Start a session against an app, then
 send each Appium command as a single shell invocation -- no client-script
@@ -25,9 +26,9 @@ appium driver doctor xcuitest       # verify a driver's toolchain
 ## Install
 
 ```sh
-npm i -g aco
+npm i -g @tai2/aco
 # or run without installing:
-npx aco --help
+npx @tai2/aco --help
 ```
 
 ## Usage
