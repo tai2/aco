@@ -242,3 +242,39 @@ To extend coverage for a new `aco` command:
 2. Add a screen file under `aut/app/` (or amend an existing one).
 3. Add a `<Link>` from `aut/app/index.tsx` to the new screen.
 4. Update `aut/README.md`'s screen-to-command table.
+
+## Claude Code skill / plugin
+
+`skills/aco/SKILL.md` (+ `reference/`) is an Agent Skill that teaches Claude
+Code to drive a live session through the installed `aco` binary; it shells out,
+it does not import any source. `.claude-plugin/plugin.json` packages it as a
+plugin and `.claude-plugin/marketplace.json` lists it so users can
+`claude plugin marketplace add tai2/aco` + `claude plugin install aco@aco`. The
+plugin root is the repo root (`"source": "."` in the marketplace), so the
+component dir `skills/` sits at the repo root alongside `.claude-plugin/`.
+
+Progressive disclosure: `SKILL.md` is the lean playbook; the full flag catalog
+lives in `reference/commands.md` and failure modes in
+`reference/troubleshooting.md`, loaded by Claude on demand. The skill is scoped
+`allowed-tools: Bash(aco:*), Read` — auto-approve `aco` invocations and read the
+screenshots it writes, nothing more.
+
+The single most important behavioral instruction in the skill is **always pass
+`--detach`**: `aco session start` is foreground by default and blocks until
+Ctrl-C, so an agent's Bash call would otherwise hang.
+
+This is a separate distribution channel from the npm package. `package.json`
+keeps `files: ["dist"]`, so `skills/` and `.claude-plugin/` are deliberately
+**not** in the tarball — `npm i -g @tai2/aco` gets the binary, `claude plugin
+install` gets the skill.
+
+When the CLI surface changes (a new top-level command, a renamed flag, or a
+driver bump that adds/removes `aco ios`/`aco android` extensions), update
+`reference/commands.md` to match. The generated platform extensions are
+discoverable at runtime (`aco mobile list`, `aco ios --help`), so the skill
+points there rather than enumerating all ~207 — only the hand-written command
+families need to be kept in sync by hand.
+
+Bump `.claude-plugin/plugin.json`'s `version` when you want installed users to
+pick up skill changes — pushing commits alone does not update them. This version
+is intentionally independent of `package.json`'s CLI version.
