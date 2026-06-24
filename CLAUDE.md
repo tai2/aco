@@ -68,6 +68,24 @@ leave the file so `session list --prune` can surface it. The other on-disk
 artifact `aco` produces is `~/.aco/logs/appium-<port>.log` written by
 `session start` for postmortem debugging.
 
+## Node 26+ forbidden request headers (`UND_ERR_INVALID_ARG`)
+
+`src/lib/wd-client.ts` passes a `transformRequest` hook (`stripForbiddenHeaders`)
+to **both** `remote()` (session creation) and `attach()` (every subcommand).
+`webdriver@9`'s transport sets two Fetch-spec **forbidden request headers** by
+hand: `Connection: keep-alive` (its `DEFAULT_HEADERS`) and a `Content-Length` it
+computes for any request with a body. Node `<=25` silently dropped them; Node
+`>=26` enforces the spec and rejects the request, so **every** WebDriver call
+fails with `WebDriverError: Request failed with error code UND_ERR_INVALID_ARG`
+(only the body-bearing POSTs strictly need `Content-Length` stripped, but we drop
+both to match the upstream root cause). This is why a published `aco` running
+under a Homebrew/system Node 26 fails while `pnpm dev` -- pinned to the project's
+Node `<=25` toolchain -- works with identical args. The hook deletes both
+headers before the request is built; the Fetch layer recomputes `Content-Length`
+from the body and manages connection reuse itself, and on Node `<=25` deleting
+absent headers is a harmless no-op. Tracking webdriverio#15265; remove the hook
+once that ships an upstream fix.
+
 ## Background: the three kinds of Appium command
 
 There are three families of commands an Appium server accepts, and `aco`
