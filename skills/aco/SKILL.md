@@ -19,6 +19,10 @@ installed. If `aco --help` fails, stop and tell the user to install it.
    `aco session start --detach --platform ios --app <path-or-bundleId> --device-name "<name>"`
    Android needs `--app-activity` when `--app` is an appPackage id, and `--avd`
    (or a plugged-in device) to choose the target.
+   **Do NOT unzip the build first.** Pass the archive straight to `--app`: the
+   driver extracts it itself. iOS accepts a `.zip`/`.app.zip`/`.ipa` (or an
+   unzipped `.app`); Android accepts an `.apk`/`.apks`. Unzipping a `.app.zip`
+   to a bare `.app` is unnecessary and a common mistake.
 3. **Inspect before acting** — never guess coordinates:
    - `aco elements` → labelled elements + ready-to-paste tap selectors
      (use `--json` to parse).

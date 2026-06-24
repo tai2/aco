@@ -16,7 +16,7 @@ Foreground by default (Ctrl-C tears down). **From an agent, ALWAYS pass
 | Flag | Notes |
 |---|---|
 | `-p, --platform <ios\|android>` | **required** |
-| `-a, --app <path-or-id>` | AUT build path, or bundleId/appPackage |
+| `-a, --app <path-or-id>` | AUT build path (pass the archive as-is — see below), or bundleId/appPackage |
 | `-A, --app-activity <activity>` | Android only; required when `--app` is an appPackage id |
 | `-d, --device-name <name>` | `appium:deviceName` |
 | `-V, --platform-version <ver>` | `appium:platformVersion` |
@@ -48,6 +48,12 @@ Foreground by default (Ctrl-C tears down). **From an agent, ALWAYS pass
 Credentials also fall back to `ACO_REMOTE_USERNAME` / `ACO_REMOTE_PASSWORD`.
 `session start` prints a JSON envelope `{sessionId, serverUrl, platform, pid,
 ...}` on stdout.
+
+**`--app` takes the build archive as-is — do NOT unzip it first.** The Appium
+driver handles extraction. iOS (XCUITest) accepts a `.zip`/`.app.zip`/`.ipa` (or
+an unzipped `.app` directory); Android (UiAutomator2) accepts an `.apk`/`.apks`.
+Manually unzipping a `.app.zip` down to a bare `.app` just to pass it is a
+common mistake — hand the original archive to `--app` directly.
 
 ### `aco session list [--json] [--prune]`
 Lists records in `~/.aco/sessions`, annotating each with liveness. `--prune`
