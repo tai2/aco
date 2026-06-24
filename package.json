@@ -26,9 +26,7 @@
   "bin": {
     "aco": "./dist/cli.js"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "engines": {
     "node": ">=20"
   },
@@ -60,6 +58,7 @@
     "aut:build:android": "pnpm --dir aut run build:android",
     "gen:extensions": "node --import tsx/esm scripts/generate-extensions.ts",
     "prepublishOnly": "pnpm run verify",
+    "version": "biome format --write package.json && git add package.json",
     "release:patch": "npm version patch -m \"Release %s\" && git push --follow-tags",
     "release:minor": "npm version minor -m \"Release %s\" && git push --follow-tags",
     "release:major": "npm version major -m \"Release %s\" && git push --follow-tags"
@@ -85,8 +84,6 @@
     "vitest": "^1.0.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }
