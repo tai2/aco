@@ -8,5 +8,13 @@
   "homepage": "https://github.com/tai2/aco#readme",
   "repository": "https://github.com/tai2/aco",
   "license": "MIT",
-  "keywords": ["appium", "mobile", "ios", "android", "automation", "e2e", "webdriver"]
+  "keywords": [
+    "appium",
+    "mobile",
+    "ios",
+    "android",
+    "automation",
+    "e2e",
+    "webdriver"
+  ]
 }
