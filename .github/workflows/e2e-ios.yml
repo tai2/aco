@@ -113,6 +113,13 @@ jobs:
           IFS=$'\t' read -r UDID NAME SDK < <(xcrun simctl list devices available -j \
             | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; k,dev=next((k,x) for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']); print(dev['udid'], dev['name'], k.rsplit('iOS-',1)[1].replace('-','.'), sep='\t')")
           xcrun simctl boot "$UDID" || true
+          # `boot` returns immediately, but the OS keeps initializing for many
+          # more seconds. The xcuitest session-create only waits 120s for boot
+          # to finish before erroring ("simulator ... failed to finish booting
+          # after 120s") -- a frequent cold-runner flake. Block here until the
+          # device reports fully booted so the session starts against a ready
+          # simulator. (-b boots if needed, then waits for boot completion.)
+          xcrun simctl bootstatus "$UDID" -b || true
           # Export the device we actually queried/booted, not a guessed label.
           # Pass the UDID too so aco pins the xcuitest session to this exact,
           # already-booted simulator instead of matching on name (which can hit
