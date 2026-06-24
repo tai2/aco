@@ -24,6 +24,7 @@ import { registerWait } from './commands/wait.js';
 import { registerWeb } from './commands/web.js';
 import { registerWindow } from './commands/window.js';
 import { assertSupportedNodeVersion } from './lib/node-version.js';
+import pkg from '../package.json' with { type: 'json' };
 
 assertSupportedNodeVersion('20.0.0');
 
@@ -32,7 +33,7 @@ const program = new Command()
   .description(
     'Appium Command-line Operator -- start a session, then drive it from the shell.',
   )
-  .version('0.0.0')
+  .version(pkg.version)
   .showHelpAfterError();
 
 registerSession(program);
