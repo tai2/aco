@@ -19,6 +19,9 @@ installed. If `aco --help` fails, stop and tell the user to install it.
    `aco session start --detach --platform ios --app <path-or-bundleId> --device-name "<name>"`
    Android needs `--app-activity` when `--app` is an appPackage id, and `--avd`
    (or a plugged-in device) to choose the target.
+   `session start` has **no `--json` flag** — it always emits the JSON envelope
+   on stdout. Do not append `--json` (it errors); for verbatim W3C caps use
+   `--caps-json '<json>'` instead.
    **Do NOT unzip the build first.** Pass the archive straight to `--app`: the
    driver extracts it itself. iOS accepts a `.zip`/`.app.zip`/`.ipa` (or an
    unzipped `.app`); Android accepts an `.apk`/`.apks`. Unzipping a `.app.zip`
@@ -50,9 +53,9 @@ or a full `--selector 'strategy:value'`. Get exact values from
 
 ## Reading output
 
-`session start` prints a JSON envelope; `device list`, `elements`,
-`session list`, and `mobile list` accept `--json`. Parse JSON; don't scrape the
-human-readable tables.
+`session start` **always** prints a JSON envelope (no `--json` flag — passing
+one errors). Only `device list`, `elements`, `session list`, and `mobile list`
+*accept* `--json`. Parse JSON; don't scrape the human-readable tables.
 
 ## When you need a flag or command not listed here
 

@@ -46,8 +46,9 @@ Foreground by default (Ctrl-C tears down). **From an agent, ALWAYS pass
 | `--detach` | background (no-op with `--server-url`) |
 
 Credentials also fall back to `ACO_REMOTE_USERNAME` / `ACO_REMOTE_PASSWORD`.
-`session start` prints a JSON envelope `{sessionId, serverUrl, platform, pid,
-...}` on stdout.
+`session start` **always** prints a JSON envelope `{sessionId, serverUrl,
+platform, pid, ...}` on stdout — there is **no `--json` flag**, and passing one
+errors. (For verbatim W3C caps use `--caps-json`, listed above.)
 
 **`--app` takes the build archive as-is — do NOT unzip it first.** The Appium
 driver handles extraction. iOS (XCUITest) accepts a `.zip`/`.app.zip`/`.ipa` (or
