@@ -1,5 +1,10 @@
 import { spawn } from 'node:child_process';
-import { createWriteStream, mkdirSync, readFileSync } from 'node:fs';
+import {
+  createWriteStream,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+} from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Command } from '@commander-js/extra-typings';
@@ -140,7 +145,18 @@ function readFirstLine(
 }
 
 async function detachAndExit(sessionTimeoutSec: number): Promise<void> {
-  const entry = process.argv[1];
+  // process.argv[1] is the path as invoked. A global npm/Homebrew install runs
+  // aco through a `bin` symlink (e.g. /opt/homebrew/bin/aco) that has no `.js`
+  // extension, so resolve it to the real file before deciding dev vs. built --
+  // otherwise the built CLI is mistaken for dev mode. Under tsx (`pnpm dev`)
+  // this resolves to src/cli.ts, which is correctly rejected below.
+  const invoked = process.argv[1];
+  let entry: string | undefined;
+  try {
+    entry = invoked ? realpathSync(invoked) : undefined;
+  } catch {
+    entry = invoked;
+  }
   if (!entry || !entry.endsWith('.js')) {
     process.stderr.write(
       'aco: --detach is not supported in dev mode (tsx). ' +
