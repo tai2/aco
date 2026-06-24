@@ -1,4 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
+import pkg from '../package.json' with { type: 'json' };
 import { registerActions } from './commands/actions.js';
 import { registerContext } from './commands/context/index.js';
 import { registerDevice } from './commands/device/index.js';
@@ -24,7 +25,6 @@ import { registerWait } from './commands/wait.js';
 import { registerWeb } from './commands/web.js';
 import { registerWindow } from './commands/window.js';
 import { assertSupportedNodeVersion } from './lib/node-version.js';
-import pkg from '../package.json' with { type: 'json' };
 
 assertSupportedNodeVersion('20.0.0');
 
