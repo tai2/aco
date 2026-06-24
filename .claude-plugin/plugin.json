@@ -1,6 +1,6 @@
 {
   "name": "aco",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Drive a live Appium session from Claude Code with the aco CLI — start/stop sessions, find elements, tap, swipe, type, screenshot, read page source, switch web contexts, and call platform mobile: extensions on iOS simulators/emulators and real devices.",
   "author": {
     "name": "tai2"
