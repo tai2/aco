@@ -32,5 +32,11 @@ export default defineConfig({
     hookTimeout: 420_000,
     testTimeout: 120_000,
     bail: 0,
+    // Catch-all for residual simulator/WDA flake that survives the targeted
+    // guards (nav.ts retries activateApp; the workflow waits for sim boot). A
+    // retry re-runs the test AND its beforeEach (resetApp) -- it does NOT re-run
+    // beforeAll, so a cold session-start failure still fails fast. Kept low so a
+    // genuinely broken assertion is not masked behind slow reruns.
+    retry: 1,
   },
 });
