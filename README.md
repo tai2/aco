@@ -61,7 +61,7 @@ aco device list --state all --json       # everything, machine-readable
 
 ```sh
 # iOS simulator (foreground; Ctrl-C tears it down)
-aco session start --platform ios --app /tmp/MyApp.app --device-name "iPhone 15"
+aco session start --platform ios --app /tmp/MyApp.app.zip --device-name "iPhone 15"
 
 # Android emulator
 aco session start --platform android --app com.example.app --app-activity .MainActivity --avd Pixel_8_API_34
