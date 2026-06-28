@@ -1,6 +1,6 @@
 {
   "name": "@tai2/aco",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Appium Command-line Operator — drive an Appium session from the shell, one command at a time.",
   "type": "module",
   "license": "MIT",
