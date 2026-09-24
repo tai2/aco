@@ -76,8 +76,8 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@types/node": "^20.0.0",
-    "appium-uiautomator2-driver": "^7.5.2",
-    "appium-xcuitest-driver": "^11.9.0",
+    "appium-uiautomator2-driver": "^8.7.0",
+    "appium-xcuitest-driver": "^12.13.2",
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.4.0",

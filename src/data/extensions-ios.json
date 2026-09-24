@@ -2,7 +2,7 @@
   "drivers": [
     {
       "package": "appium-xcuitest-driver",
-      "version": "11.9.0"
+      "version": "12.13.2"
     }
   ],
   "extensions": {
@@ -431,6 +431,25 @@
         }
       ]
     },
+    "mobile: startAutomationSession": {
+      "command": "mobileStartAutomationSession",
+      "params": []
+    },
+    "mobile: stopAutomationSession": {
+      "command": "mobileStopAutomationSession",
+      "params": [
+        {
+          "name": "closeAllWindows",
+          "required": false,
+          "kind": "boolean"
+        },
+        {
+          "name": "restorePreviousContext",
+          "required": false,
+          "kind": "boolean"
+        }
+      ]
+    },
     "mobile: installApp": {
       "command": "mobileInstallApp",
       "params": [
@@ -722,6 +741,31 @@
         }
       ]
     },
+    "mobile: rotateDigitalCrown": {
+      "command": "mobileRotateDigitalCrown",
+      "params": [
+        {
+          "name": "delta",
+          "required": true,
+          "kind": "number"
+        },
+        {
+          "name": "velocity",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: performHandGesture": {
+      "command": "mobilePerformHandGesture",
+      "params": [
+        {
+          "name": "name",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
     "mobile: enrollBiometric": {
       "command": "mobileEnrollBiometric",
       "params": [
@@ -844,6 +888,11 @@
           "name": "contentType",
           "required": false,
           "kind": "string"
+        },
+        {
+          "name": "mode",
+          "required": false,
+          "kind": "string"
         }
       ]
     },
@@ -857,6 +906,11 @@
         },
         {
           "name": "contentType",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "mode",
           "required": false,
           "kind": "string"
         }
@@ -1095,6 +1149,36 @@
         }
       ]
     },
+    "mobile: performIndigoHidEvent": {
+      "command": "mobilePerformIndigoHidEvent",
+      "params": [
+        {
+          "name": "name",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "page",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "usage",
+          "required": false,
+          "kind": "number"
+        },
+        {
+          "name": "durationSeconds",
+          "required": false,
+          "kind": "string"
+        },
+        {
+          "name": "pressCount",
+          "required": false,
+          "kind": "string"
+        }
+      ]
+    },
     "mobile: configureLocalization": {
       "command": "mobileConfigureLocalization",
       "params": [
@@ -1125,6 +1209,20 @@
     },
     "mobile: stopNetworkMonitor": {
       "command": "mobileStopNetworkMonitor",
+      "params": []
+    },
+    "mobile: startSystemMonitor": {
+      "command": "mobileStartSystemMonitor",
+      "params": [
+        {
+          "name": "intervalMs",
+          "required": false,
+          "kind": "number"
+        }
+      ]
+    },
+    "mobile: stopSystemMonitor": {
+      "command": "mobileStopSystemMonitor",
       "params": []
     },
     "mobile: listConditionInducers": {
@@ -1215,6 +1313,32 @@
     },
     "mobile: resetSimulatedLocation": {
       "command": "mobileResetSimulatedLocation",
+      "params": []
+    },
+    "mobile: enableVoiceOver": {
+      "command": "mobileEnableVoiceOver",
+      "params": []
+    },
+    "mobile: disableVoiceOver": {
+      "command": "mobileDisableVoiceOver",
+      "params": []
+    },
+    "mobile: isVoiceOverEnabled": {
+      "command": "mobileIsVoiceOverEnabled",
+      "params": []
+    },
+    "mobile: voiceOverMove": {
+      "command": "mobileVoiceOverMove",
+      "params": [
+        {
+          "name": "direction",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
+    "mobile: voiceOverCurrentSpeech": {
+      "command": "mobileVoiceOverCurrentSpeech",
       "params": []
     },
     "mobile: shake": {

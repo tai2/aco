@@ -2,11 +2,11 @@
   "drivers": [
     {
       "package": "appium-uiautomator2-driver",
-      "version": "7.5.2"
+      "version": "8.7.0"
     },
     {
       "package": "appium-android-driver",
-      "version": "13.2.3"
+      "version": "14.2.0"
     }
   ],
   "extensions": {
@@ -1158,6 +1158,11 @@
           "name": "language",
           "required": false,
           "kind": "string"
+        },
+        {
+          "name": "stringFile",
+          "required": false,
+          "kind": "string"
         }
       ]
     },
@@ -1519,6 +1524,16 @@
       "command": "mobileViewPortRect",
       "params": []
     },
+    "mobile: viewportElementRect": {
+      "command": "mobileViewportElementRect",
+      "params": [
+        {
+          "name": "elementId",
+          "required": true,
+          "kind": "string"
+        }
+      ]
+    },
     "mobile: deepLink": {
       "command": "mobileDeepLink",
       "params": [
@@ -1565,6 +1580,10 @@
     },
     "mobile: deviceInfo": {
       "command": "mobileGetDeviceInfo",
+      "params": []
+    },
+    "mobile: getDeclaredOrientation": {
+      "command": "mobileGetDeclaredOrientation",
       "params": []
     },
     "mobile: openNotifications": {

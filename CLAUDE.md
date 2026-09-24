@@ -174,8 +174,8 @@ Two source artifacts per driver feed the generator:
 
 - `build/lib/execute-method-map.js` — the name→command mapping and the
   `{ required?, optional? }` param-name lists. `appium-xcuitest-driver` exports
-  ~103 entries (pinned 11.9.0). `appium-uiautomator2-driver` spreads
-  `appium-android-driver`'s map into its own for ~104 entries total.
+  ~115 entries (pinned 12.13.2). `appium-uiautomator2-driver` spreads
+  `appium-android-driver`'s map into its own for ~106 entries total.
 - `build/lib/commands/*.d.ts` — each `mobile:` entry's `command` field names the
   implementing function (e.g. `mobile: scroll` → `mobileScroll`), whose shipped
   TypeScript signature carries the real parameter types (`Direction`, `boolean`,
@@ -193,6 +193,19 @@ manifest. Those JSON files are committed and imported by `src/lib/manifest.ts`
 manifest at CLI-registration time to register every `aco ios`/`aco android`
 command, mapping each param to a `--<param>` flag that coerces by `kind`. The
 runtime CLI never touches the driver packages.
+
+Since `appium-xcuitest-driver@12` / `appium-uiautomator2-driver@8` /
+`appium-android-driver@14`, the driver packages are **ESM-only with a
+restricted `exports` map** publishing only `"."` and `"./package.json"`. A deep
+`import '<pkg>/build/lib/execute-method-map.js'` now fails with
+`ERR_PACKAGE_PATH_NOT_EXPORTED`. `scripts/generate-extensions.ts` therefore
+anchors on `require.resolve('<pkg>/package.json')` — the one exported subpath —
+and imports the map by absolute `file://` URL, which bypasses `exports`. That is
+intentional: this is a build-time source reader, never shipped and never on the
+CLI startup path, the same posture as the `build/lib/**/*.d.ts` walk beside it.
+Note that `tsconfig.json` does not include `scripts/`, so `pnpm typecheck` will
+not catch a break here — the CI `git diff --exit-code src/data` gate in
+`ci.yml` is what does.
 
 Promotion is **generated** — there is no hand-written file per extension. There
 are currently **no** hand-written `mobile:` shims: the cross-platform ergonomic
@@ -225,13 +238,20 @@ the failure mode legible.
 ## Updating the pinned drivers
 
 ```sh
-pnpm up appium-xcuitest-driver appium-uiautomator2-driver
+# --latest is required to cross a major; a bare `pnpm up` stays inside the
+# caret range in package.json and will not move 11.x -> 12.x.
+pnpm up --latest appium-xcuitest-driver appium-uiautomator2-driver
 pnpm gen:extensions      # rederives src/data/extensions-*.json (types + provenance) from the new devDeps
 git diff src/data/       # eyeball what changed (new/removed commands, changed param types/optionality)
 # The generated aco ios/android commands track the manifests automatically.
 # aco tap/swipe ride the W3C pointer layer (not mobile:), so a driver bump
 # does not affect their params.
 ```
+
+Forgetting the regeneration is caught in CI: `ci.yml` re-runs
+`pnpm gen:extensions` and fails on `git diff --exit-code src/data`, which also
+catches a driver packaging change silently breaking the generator (`scripts/`
+is outside `tsconfig.json`'s `include`, so `pnpm typecheck` cannot).
 
 ## Example AUT
 
@@ -290,7 +310,7 @@ When the CLI surface changes (a new top-level command, a renamed flag, or a
 driver bump that adds/removes `aco ios`/`aco android` extensions), update
 `reference/commands.md` to match. The generated platform extensions are
 discoverable at runtime (`aco mobile list`, `aco ios --help`), so the skill
-points there rather than enumerating all ~207 — only the hand-written command
+points there rather than enumerating all ~221 — only the hand-written command
 families need to be kept in sync by hand.
 
 Bump `.claude-plugin/plugin.json`'s `version` when you want installed users to
