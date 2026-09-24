@@ -48,6 +48,14 @@ All of these are the user's Appium install, not `aco`. The fix is almost always
   collapses mid-input** → upstream XCTest/iOS behaviour (WebDriverAgent#1258,
   closed as not-planned). No fix; prefer setting the value via the app or retry
   per character. Simulators are unaffected.
+- **Session start fails with `Cannot launch <bundle id> application. Make sure
+  the correct bundle identifier has been provided`** → usually the bundle id is
+  fine and the app is *crashing on launch*. The common iOS 27 cause is an app
+  built against the iOS 27 SDK that has not adopted the UIScene lifecycle; it
+  traps in `__UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`.
+  Confirm with `~/Library/Logs/DiagnosticReports/<app>-*.ips`, and check the app
+  runs at all via `xcrun simctl launch <udid> <bundle id>` before suspecting aco
+  or the driver.
 - **A device paired only over the network doesn't appear in `aco device list`** →
   `aco` enumerates real devices over USB (usbmuxd) only. Connect by cable, or
   pass its `--udid` explicitly.
