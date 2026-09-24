@@ -28,3 +28,30 @@ start a session first with `aco session start --detach ...`.
 - **`--detach` fails / exits 2** → only happens under the `tsx` dev runtime
   (`pnpm dev`), which re-execs the built `dist/cli.js`. This affects aco
   developers, not installed-CLI users — the published binary detaches fine.
+
+## Xcode 27 / iOS 27
+
+All of these are the user's Appium install, not `aco`. The fix is almost always
+`appium driver update xcuitest`.
+
+- **Session start fails building WebDriverAgent** (`Supported Deployment Target
+  Versions is 15.0 to 27.0`, or `Simulator.app` / `.../Contents/Developer/
+  Applications` not found) → their `appium-xcuitest-driver` predates Xcode 27
+  support. Need **11.10.0+**; `appium driver update xcuitest`.
+- **`aco ios lock` / `unlock` / `is-locked` silently do nothing on iOS 27** →
+  needs `appium-xcuitest-driver` **11.17.5+**.
+- **A new simulator window opens on every `session start`** → Xcode 27 replaced
+  `Simulator.app` with Device Hub, and `appium-ios-simulator` before **10.1.1**
+  opens a fresh one per boot. Pass `--headless` to `aco session start`, or update
+  the driver.
+- **`aco send-keys` on a *real* iOS 27 device drops characters / the keyboard
+  collapses mid-input** → upstream XCTest/iOS behaviour (WebDriverAgent#1258,
+  closed as not-planned). No fix; prefer setting the value via the app or retry
+  per character. Simulators are unaffected.
+- **A device paired only over the network doesn't appear in `aco device list`** →
+  `aco` enumerates real devices over USB (usbmuxd) only. Connect by cable, or
+  pass its `--udid` explicitly.
+- **`unknown command (script)` for a VoiceOver, hand-gesture or digital-crown
+  command** → the specific case of the general failure above: these are
+  `appium-xcuitest-driver` **12.x** additions, and the connected driver is older
+  than the manifest `aco` was built against.

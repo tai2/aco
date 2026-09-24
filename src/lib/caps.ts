@@ -8,6 +8,9 @@ export interface StartCapsInput {
   platformVersion?: string;
   udid?: string;
   avd?: string;
+  // Suppress the simulator/emulator GUI viewer. Cross-platform: XCUITest skips
+  // launching the viewer app, UiAutomator2 boots the emulator with -no-window.
+  headless?: boolean;
   // iOS real-device code signing (XCUITest builds/installs WDA on-device):
   xcodeOrgId?: string;
   xcodeSigningId?: string;
@@ -36,6 +39,7 @@ export function buildCapabilities(
   if (input.platformVersion)
     base['appium:platformVersion'] = input.platformVersion;
   if (input.udid) base['appium:udid'] = input.udid;
+  if (input.headless) base['appium:isHeadless'] = true;
   if (input.avd) {
     if (input.platform !== 'android') {
       throw new Error(

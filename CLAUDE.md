@@ -157,6 +157,14 @@ use.) We also depend on `@appium/logger` (a small, clean utility package) so
 device attached. We do **not** depend on `@appium/support` for this (it drags in
 the same `read-pkg`/`unicorn-magic` chain noted above).
 
+Xcode 27's Device Hub can pair iPhone/iPad/Watch on OS 27+ **over the network**,
+with no cable. `ios-real.ts` enumerates strictly over usbmuxd, so a
+network-paired-only device does not appear in `aco device list` and the
+auto-target step in `session start` will not find it either — it falls through
+to "let XCUITest pick a simulator". Seeing those devices would require
+`devicectl`/CoreDevice, which we do not shell out to. This is a new capability
+gap, not a regression; pass `--udid` explicitly for such a device.
+
 ## How we stay in sync with Appium
 
 Every `mobile:` extension is a **generated first-class command**
@@ -248,6 +256,33 @@ Forgetting the regeneration is caught in CI: `ci.yml` re-runs
 `pnpm gen:extensions` and fails on `git diff --exit-code src/data`, which also
 catches a driver packaging change silently breaking the generator (`scripts/`
 is outside `tsconfig.json`'s `include`, so `pnpm typecheck` cannot).
+
+## Xcode 27 / Device Hub
+
+Xcode 27 deleted `Contents/Developer/Applications/` and replaced
+`Simulator.app` with **`DeviceHub.app`** (bundle id `com.apple.dt.Devices`, now
+under `Contents/Applications/`). This does **not** touch `aco`: the only direct
+Apple CLI call in the codebase is `xcrun simctl list -j devices` in
+`src/lib/devices/ios.ts`, and that JSON contract is unchanged (`udid`, `name`,
+`state`, `isAvailable`, runtime keys like
+`com.apple.CoreSimulator.SimRuntime.iOS-27-0`, which `runtimeToVersion` reduces
+to `27.0` correctly). Booting, signing, building and launching WDA all happen
+inside the user's XCUITest driver, downstream of the caps `buildCapabilities`
+produces.
+
+What *did* change for users: `appium-ios-simulator` launches Device Hub with
+`open -Fn` (`-n` = new instance regardless), and cross-process dedup only landed
+in `appium-ios-simulator@10.1.1`. Booting several simulators from separate
+`aco session start --detach` invocations therefore stacks up one Device Hub
+window each. `--headless` (`appium:isHeadless`) sidesteps the viewer entirely
+and is the recommended answer; it is cross-platform, mapping to the emulator's
+`-no-window` on UiAutomator2.
+
+Driver version floors worth knowing (all user-installed, none pinned by us):
+`appium-xcuitest-driver` **11.10.0+** to build WDA under Xcode 27 (WDA's
+`IPHONEOS_DEPLOYMENT_TARGET` had to reach 15), **11.17.5+** for working screen
+lock/unlock on iOS 27 (`aco ios lock` / `unlock` / `is-locked`), and **12.5.1+**
+for the preinstalled-WDA `devicectl` launch path on iOS 27+.
 
 ## Example AUT
 

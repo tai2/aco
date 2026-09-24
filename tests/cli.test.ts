@@ -347,6 +347,7 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('--use-plugins');
     expect(result.stdout).toContain('--use-drivers');
     expect(result.stdout).toContain('--address');
+    expect(result.stdout).toContain('--headless');
     expect(result.stdout).toContain('--keep-alive-timeout');
     expect(result.stdout).toContain('--request-timeout');
     expect(result.stdout).toContain('--shutdown-timeout');

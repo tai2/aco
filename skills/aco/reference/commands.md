@@ -22,6 +22,7 @@ Foreground by default (Ctrl-C tears down). **From an agent, ALWAYS pass
 | `-V, --platform-version <ver>` | `appium:platformVersion` |
 | `-u, --udid <udid>` | `appium:udid` |
 | `--avd <name>` | Android only; AVD to boot |
+| `--headless` | `appium:isHeadless` — skip the simulator/emulator GUI. Cross-platform; avoids a new Device Hub window per boot on Xcode 27 |
 | `--xcode-org-id <id>` | iOS real device — WDA signing (Team ID) |
 | `--xcode-signing-id <id>` | iOS real device |
 | `--allow-provisioning-device-registration` | iOS real device |

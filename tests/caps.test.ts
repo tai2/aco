@@ -32,3 +32,27 @@ describe('buildCapabilities -- iOS code-signing flags', () => {
     ).toThrow(/only valid for --platform ios/);
   });
 });
+
+describe('buildCapabilities -- --headless', () => {
+  it('maps headless to appium:isHeadless on both platforms', () => {
+    expect(
+      buildCapabilities({ platform: 'ios', headless: true })[
+        'appium:isHeadless'
+      ],
+    ).toBe(true);
+    expect(
+      buildCapabilities({ platform: 'android', headless: true })[
+        'appium:isHeadless'
+      ],
+    ).toBe(true);
+  });
+
+  it('omits the cap when not requested', () => {
+    expect(buildCapabilities({ platform: 'ios' })).not.toHaveProperty(
+      'appium:isHeadless',
+    );
+    expect(
+      buildCapabilities({ platform: 'ios', headless: false }),
+    ).not.toHaveProperty('appium:isHeadless');
+  });
+});

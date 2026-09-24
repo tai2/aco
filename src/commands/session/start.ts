@@ -262,6 +262,12 @@ export function registerSessionStart(session: Command): void {
       'Android only -- AVD name of the emulator to target (appium:avd)',
     )
     .option(
+      '--headless',
+      'do not open the simulator/emulator GUI (appium:isHeadless). On Xcode 27 ' +
+        'the iOS viewer is Device Hub, and each boot opens a new window; ' +
+        'headless avoids that entirely.',
+    )
+    .option(
       '--xcode-org-id <id>',
       'iOS real device -- appium:xcodeOrgId (Apple Team ID for WDA signing)',
     )
@@ -453,6 +459,7 @@ export function registerSessionStart(session: Command): void {
           opts.platformVersion !== undefined ? '--platform-version' : undefined,
           opts.udid !== undefined ? '--udid' : undefined,
           opts.avd !== undefined ? '--avd' : undefined,
+          opts.headless ? '--headless' : undefined,
           opts.xcodeOrgId !== undefined ? '--xcode-org-id' : undefined,
           opts.xcodeSigningId !== undefined ? '--xcode-signing-id' : undefined,
           opts.allowProvisioningDeviceRegistration
@@ -480,6 +487,7 @@ export function registerSessionStart(session: Command): void {
           platformVersion: opts.platformVersion,
           udid,
           avd,
+          headless: opts.headless,
           xcodeOrgId: opts.xcodeOrgId,
           xcodeSigningId: opts.xcodeSigningId,
           allowProvisioningDeviceRegistration:
