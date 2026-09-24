@@ -76,6 +76,10 @@ aco session start --platform android --app com.example.app --app-activity .MainA
 # Background instead of foreground
 aco session start --detach --platform ios --app /tmp/MyApp.app
 
+# Headless: skip the simulator/emulator window (Xcode 27 opens Device Hub
+# per boot; useful for CI and for running several sessions at once).
+aco session start --detach --platform ios --app /tmp/MyApp.app --headless
+
 # Forward extra Appium server flags
 aco session start --platform android --log-level debug --use-plugins images
 

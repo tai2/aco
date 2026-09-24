@@ -51,6 +51,16 @@ jobs:
       - name: Test
         run: pnpm run test
 
+      # Regenerating from the pinned devDeps must reproduce the committed
+      # snapshots byte for byte. Catches (a) a driver bump landing without
+      # `pnpm gen:extensions`, and (b) a driver packaging change (ESM-only
+      # exports, a moved build/lib layout) silently breaking the generator.
+      - name: Check src/data is in sync with the pinned drivers
+        if: matrix.node == '22'
+        run: |
+          pnpm run gen:extensions
+          git diff --exit-code src/data
+
       - name: Build
         run: pnpm run build
 
@@ -61,5 +71,3 @@ jobs:
       # warrants exercising the xcrun branch in CI.
       # TODO(follow-up): pnpm pack + extract + node ./dist/cli.js --help
       # to validate package files glob + bin shebang end-to-end.
-      # TODO(follow-up): pnpm gen:method-map && git diff --exit-code src/data
-      # to catch drift between pinned drivers and committed snapshots.

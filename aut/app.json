@@ -7,13 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "aco-aut",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "assetBundlePatterns": ["**/*"],
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "net.tai2.aco.aut"
@@ -25,6 +19,25 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ]
+    ]
   }
 }

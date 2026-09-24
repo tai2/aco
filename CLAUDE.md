@@ -68,23 +68,19 @@ leave the file so `session list --prune` can surface it. The other on-disk
 artifact `aco` produces is `~/.aco/logs/appium-<port>.log` written by
 `session start` for postmortem debugging.
 
-## Node 26+ forbidden request headers (`UND_ERR_INVALID_ARG`)
+## Why `webdriverio` has a `^9.32.0` floor, not `^9.0.0`
 
-`src/lib/wd-client.ts` passes a `transformRequest` hook (`stripForbiddenHeaders`)
-to **both** `remote()` (session creation) and `attach()` (every subcommand).
-`webdriver@9`'s transport sets two Fetch-spec **forbidden request headers** by
-hand: `Connection: keep-alive` (its `DEFAULT_HEADERS`) and a `Content-Length` it
-computes for any request with a body. Node `<=25` silently dropped them; Node
-`>=26` enforces the spec and rejects the request, so **every** WebDriver call
-fails with `WebDriverError: Request failed with error code UND_ERR_INVALID_ARG`
-(only the body-bearing POSTs strictly need `Content-Length` stripped, but we drop
-both to match the upstream root cause). This is why a published `aco` running
-under a Homebrew/system Node 26 fails while `pnpm dev` -- pinned to the project's
-Node `<=25` toolchain -- works with identical args. The hook deletes both
-headers before the request is built; the Fetch layer recomputes `Content-Length`
-from the body and manages connection reuse itself, and on Node `<=25` deleting
-absent headers is a harmless no-op. Tracking webdriverio#15265; remove the hook
-once that ships an upstream fix.
+`webdriver@9` up to and including **9.29.0** set two Fetch-spec *forbidden
+request headers* by hand -- `Connection: keep-alive` (its `DEFAULT_HEADERS`) and
+a `Content-Length` it computed for any request with a body. Node `<=25` silently
+dropped them; Node `>=26` enforces the spec and rejects the request, so **every**
+WebDriver call failed with
+`WebDriverError: Request failed with error code UND_ERR_INVALID_ARG`. We carried
+a `transformRequest` hook (`stripForbiddenHeaders`) that deleted both before the
+request was built. **`webdriver@9.30.0` removed both headers upstream**
+(webdriverio#15265) and the hook was deleted. The dependency floor stays at
+`^9.32.0` so a user install can never resolve a pre-fix transport and reintroduce
+the Node-26 failure.
 
 ## Background: the three kinds of Appium command
 
@@ -161,6 +157,14 @@ use.) We also depend on `@appium/logger` (a small, clean utility package) so
 device attached. We do **not** depend on `@appium/support` for this (it drags in
 the same `read-pkg`/`unicorn-magic` chain noted above).
 
+Xcode 27's Device Hub can pair iPhone/iPad/Watch on OS 27+ **over the network**,
+with no cable. `ios-real.ts` enumerates strictly over usbmuxd, so a
+network-paired-only device does not appear in `aco device list` and the
+auto-target step in `session start` will not find it either — it falls through
+to "let XCUITest pick a simulator". Seeing those devices would require
+`devicectl`/CoreDevice, which we do not shell out to. This is a new capability
+gap, not a regression; pass `--udid` explicitly for such a device.
+
 ## How we stay in sync with Appium
 
 Every `mobile:` extension is a **generated first-class command**
@@ -174,8 +178,8 @@ Two source artifacts per driver feed the generator:
 
 - `build/lib/execute-method-map.js` — the name→command mapping and the
   `{ required?, optional? }` param-name lists. `appium-xcuitest-driver` exports
-  ~103 entries (pinned 11.9.0). `appium-uiautomator2-driver` spreads
-  `appium-android-driver`'s map into its own for ~104 entries total.
+  ~115 entries (pinned 12.13.2). `appium-uiautomator2-driver` spreads
+  `appium-android-driver`'s map into its own for ~106 entries total.
 - `build/lib/commands/*.d.ts` — each `mobile:` entry's `command` field names the
   implementing function (e.g. `mobile: scroll` → `mobileScroll`), whose shipped
   TypeScript signature carries the real parameter types (`Direction`, `boolean`,
@@ -193,6 +197,19 @@ manifest. Those JSON files are committed and imported by `src/lib/manifest.ts`
 manifest at CLI-registration time to register every `aco ios`/`aco android`
 command, mapping each param to a `--<param>` flag that coerces by `kind`. The
 runtime CLI never touches the driver packages.
+
+Since `appium-xcuitest-driver@12` / `appium-uiautomator2-driver@8` /
+`appium-android-driver@14`, the driver packages are **ESM-only with a
+restricted `exports` map** publishing only `"."` and `"./package.json"`. A deep
+`import '<pkg>/build/lib/execute-method-map.js'` now fails with
+`ERR_PACKAGE_PATH_NOT_EXPORTED`. `scripts/generate-extensions.ts` therefore
+anchors on `require.resolve('<pkg>/package.json')` — the one exported subpath —
+and imports the map by absolute `file://` URL, which bypasses `exports`. That is
+intentional: this is a build-time source reader, never shipped and never on the
+CLI startup path, the same posture as the `build/lib/**/*.d.ts` walk beside it.
+Note that `tsconfig.json` does not include `scripts/`, so `pnpm typecheck` will
+not catch a break here — the CI `git diff --exit-code src/data` gate in
+`ci.yml` is what does.
 
 Promotion is **generated** — there is no hand-written file per extension. There
 are currently **no** hand-written `mobile:` shims: the cross-platform ergonomic
@@ -225,7 +242,9 @@ the failure mode legible.
 ## Updating the pinned drivers
 
 ```sh
-pnpm up appium-xcuitest-driver appium-uiautomator2-driver
+# --latest is required to cross a major; a bare `pnpm up` stays inside the
+# caret range in package.json and will not move 11.x -> 12.x.
+pnpm up --latest appium-xcuitest-driver appium-uiautomator2-driver
 pnpm gen:extensions      # rederives src/data/extensions-*.json (types + provenance) from the new devDeps
 git diff src/data/       # eyeball what changed (new/removed commands, changed param types/optionality)
 # The generated aco ios/android commands track the manifests automatically.
@@ -233,12 +252,73 @@ git diff src/data/       # eyeball what changed (new/removed commands, changed p
 # does not affect their params.
 ```
 
+Forgetting the regeneration is caught in CI: `ci.yml` re-runs
+`pnpm gen:extensions` and fails on `git diff --exit-code src/data`, which also
+catches a driver packaging change silently breaking the generator (`scripts/`
+is outside `tsconfig.json`'s `include`, so `pnpm typecheck` cannot).
+
+## Xcode 27 / Device Hub
+
+Xcode 27 deleted `Contents/Developer/Applications/` and replaced
+`Simulator.app` with **`DeviceHub.app`** (bundle id `com.apple.dt.Devices`, now
+under `Contents/Applications/`). This does **not** touch `aco`: the only direct
+Apple CLI call in the codebase is `xcrun simctl list -j devices` in
+`src/lib/devices/ios.ts`, and that JSON contract is unchanged (`udid`, `name`,
+`state`, `isAvailable`, runtime keys like
+`com.apple.CoreSimulator.SimRuntime.iOS-27-0`, which `runtimeToVersion` reduces
+to `27.0` correctly). Booting, signing, building and launching WDA all happen
+inside the user's XCUITest driver, downstream of the caps `buildCapabilities`
+produces.
+
+What *did* change for users: `appium-ios-simulator` launches Device Hub with
+`open -Fn` (`-n` = new instance regardless), and cross-process dedup only landed
+in `appium-ios-simulator@10.1.1`. Booting several simulators from separate
+`aco session start --detach` invocations therefore stacks up one Device Hub
+window each. `--headless` (`appium:isHeadless`) sidesteps the viewer entirely
+and is the recommended answer; it is cross-platform, mapping to the emulator's
+`-no-window` on UiAutomator2.
+
+Driver version floors worth knowing (all user-installed, none pinned by us):
+`appium-xcuitest-driver` **11.10.0+** to build WDA under Xcode 27 (WDA's
+`IPHONEOS_DEPLOYMENT_TARGET` had to reach 15), **11.17.5+** for working screen
+lock/unlock on iOS 27 (`aco ios lock` / `unlock` / `is-locked`), and **12.5.1+**
+for the preinstalled-WDA `devicectl` launch path on iOS 27+.
+
 ## Example AUT
 
 `aut/` is an Expo app used as the target for e2e testing. It is **not**
 shipped with `aco` (the root `files: ["dist"]` in `package.json` keeps
 the `aco` npm package lean). The AUT has its own `package.json` and
 its own lockfile; root `pnpm install` does **not** pull in its deps.
+
+The AUT is on **Expo SDK 57** specifically because of the iOS 27 SDK's
+**UIScene lifecycle** requirement. An app built against that SDK that still
+uses the legacy `UIApplicationDelegate`/`UIWindow` bootstrap traps at launch in
+`__UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`
+(`EXC_BREAKPOINT`) the moment its first scene is created — the build succeeds,
+so this only shows up at runtime. There is no Info.plist opt-out, and a bare
+`UIApplicationSceneManifest` is *not* enough: UIKit needs a real scene delegate
+class. Expo's supported fix is opt-in, which is why `aut/app.json` carries
+
+```json
+["expo-build-properties", { "ios": { "enableSceneSupport": true } }]
+```
+
+That plugin (expo-build-properties >= 57.0.20, and it *throws* below Expo
+57.0.23) rewrites the generated `AppDelegate.swift` to conform to
+`ExpoReactNativeFactoryProvider`, drops the legacy window bootstrap, and writes
+a `UIApplicationSceneManifest` pointing at `EXExpoAppSceneDelegate`. Since
+`aut/ios/` is gitignored and regenerated by `expo prebuild --clean`, the
+`app.json` entry is the only durable place this can live — do not hand-edit the
+generated `AppDelegate.swift` or `Info.plist`. Expo SDK 58+ adopts scenes in
+the template and the property becomes a no-op warning.
+
+Appium reports this crash misleadingly: WDA itself builds and connects, then
+session creation fails with *"Cannot launch <bundle id> application. Make sure
+the correct bundle identifier has been provided"* and the retry times out. The
+bundle id is fine — the app is crashing on launch. Check
+`~/Library/Logs/DiagnosticReports/<app>-*.ips` before believing the capability
+error.
 
 Every instrumented element in the AUT uses both `testID` *and*
 `accessibilityLabel` (set to the same string) via the helper
@@ -290,7 +370,7 @@ When the CLI surface changes (a new top-level command, a renamed flag, or a
 driver bump that adds/removes `aco ios`/`aco android` extensions), update
 `reference/commands.md` to match. The generated platform extensions are
 discoverable at runtime (`aco mobile list`, `aco ios --help`), so the skill
-points there rather than enumerating all ~207 — only the hand-written command
+points there rather than enumerating all ~221 — only the hand-written command
 families need to be kept in sync by hand.
 
 Bump `.claude-plugin/plugin.json`'s `version` when you want installed users to

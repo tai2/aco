@@ -22,6 +22,7 @@ Foreground by default (Ctrl-C tears down). **From an agent, ALWAYS pass
 | `-V, --platform-version <ver>` | `appium:platformVersion` |
 | `-u, --udid <udid>` | `appium:udid` |
 | `--avd <name>` | Android only; AVD to boot |
+| `--headless` | `appium:isHeadless` — skip the simulator/emulator GUI. Cross-platform; avoids a new Device Hub window per boot on Xcode 27 |
 | `--xcode-org-id <id>` | iOS real device — WDA signing (Team ID) |
 | `--xcode-signing-id <id>` | iOS real device |
 | `--allow-provisioning-device-registration` | iOS real device |
@@ -131,7 +132,7 @@ the W3C `element-6066-11e4-...` key automatically.
 ## Platform `mobile:` extensions
 
 - `aco ios <cmd>` / `aco android <cmd>` — **generated** from the pinned driver
-  manifests (~103 iOS / ~104 Android). `mobile: doubleTap` → `aco ios
+  manifests (~115 iOS / ~106 Android). `mobile: doubleTap` → `aco ios
   double-tap`; each param becomes a `--<camelCaseName> <value>` flag
   (`requiredOption` vs `option` per the manifest, coerced to number/boolean/
   string). The set tracks the pinned driver version, so **discover live**:

@@ -140,6 +140,9 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('tap');
     expect(result.stdout).toContain('double-tap');
     expect(result.stdout).toContain('select-picker-wheel-value');
+    // New in appium-xcuitest-driver 12.x -- guards the pin bump against a
+    // silent revert to an 11.x-era manifest.
+    expect(result.stdout).toContain('rotate-digital-crown');
     expect(result.stdout).toMatch(/pinned driver source/);
   });
 
@@ -149,6 +152,8 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('shell');
     expect(result.stdout).toContain('click-gesture');
     expect(result.stdout).toContain('drag-gesture');
+    // New in appium-uiautomator2-driver 8.x -- same guard as the iOS case.
+    expect(result.stdout).toContain('viewport-element-rect');
   });
 
   it('aco ios tap --help shows source-derived typed param help', () => {
@@ -342,6 +347,7 @@ describe('aco CLI', () => {
     expect(result.stdout).toContain('--use-plugins');
     expect(result.stdout).toContain('--use-drivers');
     expect(result.stdout).toContain('--address');
+    expect(result.stdout).toContain('--headless');
     expect(result.stdout).toContain('--keep-alive-timeout');
     expect(result.stdout).toContain('--request-timeout');
     expect(result.stdout).toContain('--shutdown-timeout');

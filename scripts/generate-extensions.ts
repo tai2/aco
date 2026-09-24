@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
@@ -41,6 +41,27 @@ interface PackageJsonShape {
 function readPkgVersion(pkgJsonPath: string): string {
   return (JSON.parse(readFileSync(pkgJsonPath, 'utf8')) as PackageJsonShape)
     .version;
+}
+
+// The driver packages are ESM-only with a restricted `exports` map that
+// publishes only "." and "./package.json" -- a deep `import
+// '<pkg>/build/lib/execute-method-map.js'` now fails with
+// ERR_PACKAGE_PATH_NOT_EXPORTED. `exports` gates *specifier* resolution, not
+// file access, so we anchor on the one exported subpath (package.json), then
+// import the map by absolute file:// URL. This is a build-time source reader
+// (never shipped, never on the CLI startup path), the same posture as the
+// dtsFiles() walk below, which was never exports-mediated either.
+async function loadExecuteMethodMap(
+  libDir: string,
+): Promise<Record<string, ExecuteMethodEntry>> {
+  const url = pathToFileURL(join(libDir, 'execute-method-map.js')).href;
+  const mod = (await import(url)) as ExecuteMethodMapShape;
+  if (!mod.executeMethodMap || typeof mod.executeMethodMap !== 'object') {
+    throw new Error(
+      `${url} did not export an executeMethodMap -- the driver's build layout changed.`,
+    );
+  }
+  return mod.executeMethodMap;
 }
 
 // Reduce a TypeScript parameter type node to one of the three coercion kinds the
@@ -163,16 +184,14 @@ function writeManifest(
 }
 
 // --- iOS (XCUITest) ---
-const iosMod = (await import(
-  'appium-xcuitest-driver/build/lib/execute-method-map.js'
-)) as ExecuteMethodMapShape;
 const iosLibDir = join(
   dirname(require.resolve('appium-xcuitest-driver/package.json')),
   'build',
   'lib',
 );
+const iosExecuteMethodMap = await loadExecuteMethodMap(iosLibDir);
 const { index: iosTypeIndex } = buildTypeIndex(dtsFiles(iosLibDir));
-const iosManifest = buildManifest(iosMod.executeMethodMap, iosTypeIndex);
+const iosManifest = buildManifest(iosExecuteMethodMap, iosTypeIndex);
 const iosDrivers: DriverRef[] = [
   {
     package: 'appium-xcuitest-driver',
@@ -184,9 +203,6 @@ const iosDrivers: DriverRef[] = [
 writeManifest('extensions-ios.json', iosDrivers, iosManifest);
 
 // --- Android (UiAutomator2 + Android driver base) ---
-const androidMod = (await import(
-  'appium-uiautomator2-driver/build/lib/execute-method-map.js'
-)) as ExecuteMethodMapShape;
 const uiautomator2PkgPath = require.resolve(
   'appium-uiautomator2-driver/package.json',
 );
@@ -198,11 +214,12 @@ const androidDriverPkgPath = require.resolve(
 );
 const uiautomator2LibDir = join(dirname(uiautomator2PkgPath), 'build', 'lib');
 const androidDriverLibDir = join(dirname(androidDriverPkgPath), 'build', 'lib');
+const androidExecuteMethodMap = await loadExecuteMethodMap(uiautomator2LibDir);
 const { index: androidTypeIndex } = buildTypeIndex(
   dtsFiles(uiautomator2LibDir, androidDriverLibDir),
 );
 const androidManifest = buildManifest(
-  androidMod.executeMethodMap,
+  androidExecuteMethodMap,
   androidTypeIndex,
 );
 const androidDrivers: DriverRef[] = [

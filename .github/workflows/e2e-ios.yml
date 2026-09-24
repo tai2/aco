@@ -49,7 +49,9 @@ jobs:
       # + build entirely -- the e2e run only needs the .app, never aut/node_modules.
       - name: Resolve Xcode build for cache key
         id: xcode
-        run: echo "build=$(xcodebuild -version | tail -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+        run: |
+          xcodebuild -version
+          echo "build=$(xcodebuild -version | tail -1 | awk '{print $3}')" >> "$GITHUB_OUTPUT"
 
       # The WDA cache is keyed on the appium-webdriveragent version, not the
       # xcuitest driver's: WDA is rebuilt cold whenever its Xcode project/source
